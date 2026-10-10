@@ -52,7 +52,7 @@ service cloud.firestore {
       return request.auth != null && (
         (request.auth.token.email_verified == true
           && request.auth.token.email in [__ADMINS__])
-        || request.auth.uid in [/*ADMIN_UIDS*/]);
+        || request.auth.uid in [/*ADMIN_UIDS*/'eLJBQQsFGefMduxITAabrN8LgUh2', '59D43Q8mbjNCPFCv8enjtJdK4TI3', 'x9r0RhnlqGfEQZBRMePQ89qvISv1', 'pWUCs8wu1cWlE7aAuelODLL3Ovx2']);
     }
 
     function texto(v, max) {

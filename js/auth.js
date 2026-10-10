@@ -89,25 +89,55 @@ export async function registrar(datos, contrasena) {
   }
   const { auth, A, db, F } = await fb();
   await auth.authStateReady();
+  const actual = auth.currentUser;
   try {
-    if (auth.currentUser && !auth.currentUser.isAnonymous) await A.signOut(auth);
-    if (auth.currentUser?.isAnonymous) {
+    if (actual?.isAnonymous) {
       // Se conserva el uid anónimo (y lo que ya tenía) al ponerle contraseña.
-      await A.linkWithCredential(auth.currentUser, A.EmailAuthProvider.credential(perfil.contacto, contrasena));
+      await A.linkWithCredential(actual, A.EmailAuthProvider.credential(perfil.contacto, contrasena));
+    } else if (actual && actual.email === perfil.contacto) {
+      // Ya tiene sesión con ese correo pero le falta el pasaporte (un registro
+      // anterior creó la cuenta y no alcanzó a guardar la ficha): se completa.
     } else {
-      await A.createUserWithEmailAndPassword(auth, perfil.contacto, contrasena);
+      if (actual) await A.signOut(auth);
+      try {
+        await A.createUserWithEmailAndPassword(auth, perfil.contacto, contrasena);
+      } catch (err) {
+        if (!String(err.code).includes('email-already-in-use')) throw err;
+        // El correo ya existe: si la contraseña coincide y no tiene pasaporte,
+        // se completa el registro; si ya lo tiene, se le pide entrar.
+        await A.signInWithEmailAndPassword(auth, perfil.contacto, contrasena).catch(() => { throw err; });
+        if ((await F.getDoc(F.doc(db, 'estudiantes', auth.currentUser.uid))).exists()) {
+          throw new ErrorCuenta('Ese correo ya tiene pasaporte. Entra con tu contraseña en "Ya tengo pasaporte".');
+        }
+      }
     }
   } catch (err) {
     console.error(err);
-    throw new ErrorCuenta(mensajeAuth(err));
+    throw err instanceof ErrorCuenta ? err : new ErrorCuenta(mensajeAuth(err));
   }
   const uid = auth.currentUser.uid;
   const ref = F.doc(db, 'estudiantes', uid);
-  if ((await F.getDoc(ref)).exists()) await F.updateDoc(ref, perfil);
-  else await F.setDoc(ref, { ...perfil, notas: {}, creadoEn: F.serverTimestamp() });
+  try {
+    if ((await F.getDoc(ref)).exists()) await F.updateDoc(ref, perfil);
+    else await F.setDoc(ref, { ...perfil, notas: {}, creadoEn: F.serverTimestamp() });
+  } catch (err) {
+    console.error('No se pudo guardar estudiantes/' + uid, err);
+    // La cuenta queda creada y con sesión: al reintentar se completa el registro.
+    throw new ErrorCuenta(err.code === 'permission-denied'
+      ? 'Tu cuenta quedó creada pero Firebase rechazó guardar el pasaporte (reglas de seguridad). Avísale a la organización y vuelve a intentarlo con la misma contraseña.'
+      : 'Tu cuenta quedó creada pero no se pudo guardar el pasaporte. Revisa tu conexión y vuelve a tocar "Emitir mi pasaporte" con la misma contraseña.');
+  }
   limpiarCaches();
   local.set(K_PERFIL, { ...perfil, notas: {} });
   return uid;
+}
+
+// Correo de la sesión abierta (para completar un registro a medias).
+export async function correoSesion() {
+  if (DEMO) return null;
+  const { auth } = await fb();
+  await auth.authStateReady();
+  return auth.currentUser && !auth.currentUser.isAnonymous ? auth.currentUser.email : null;
 }
 
 export async function iniciarSesion(correo, contrasena) {

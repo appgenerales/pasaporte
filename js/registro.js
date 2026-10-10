@@ -1,4 +1,4 @@
-import { leerPerfil, registrar, iniciarSesion, recuperarContrasena, pendiente, ErrorCuenta } from './auth.js';
+import { leerPerfil, registrar, iniciarSesion, recuperarContrasena, pendiente, ErrorCuenta, correoSesion } from './auth.js';
 import { MENTORES, mentorPorId } from './empresas.js';
 import { conectarFacultadPrograma, llenarEmpresas } from './formularios.js';
 
@@ -41,6 +41,18 @@ function prepararMentor() {
   $('#aviso-mentor').classList.remove('oculto');
 }
 
+// La cuenta existe pero le falta el pasaporte: se lleva a "Soy nuevo" con
+// el correo puesto para que complete sus datos (con la misma contraseña).
+function completarRegistro(correo) {
+  mostrarVista('form-registro');
+  const form = $('#form-registro');
+  form.elements.contacto.value = correo;
+  form.elements.contacto.readOnly = true;
+  form.querySelector('.mensaje-error').innerHTML =
+    '<span style="color:var(--azul)">Tu cuenta ya está creada pero falta tu pasaporte. Completa tus datos y usa la misma contraseña.</span>';
+  form.elements.cedula.focus();
+}
+
 async function iniciar() {
   let perfil = null;
   try {
@@ -52,6 +64,8 @@ async function iniciar() {
 
   $('#cargando').classList.add('oculto');
   $('#registro').classList.remove('oculto');
+  const correo = await correoSesion().catch(() => null);
+  if (correo) completarRegistro(correo);
 }
 
 $('#form-registro').addEventListener('submit', async (ev) => {
@@ -122,7 +136,7 @@ $('#form-entrar').addEventListener('submit', async (ev) => {
   try {
     await iniciarSesion(correo, contrasena);
     if (await leerPerfil()) return continuar();
-    error(form, 'Tu cuenta existe pero no tiene pasaporte. Regístrate en "Soy nuevo".');
+    completarRegistro(correo);
   } catch (err) {
     console.error(err);
     error(form, err instanceof ErrorCuenta ? err.message : 'No pudimos iniciar sesión. Inténtalo otra vez.');
