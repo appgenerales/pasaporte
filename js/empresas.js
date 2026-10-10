@@ -5,7 +5,7 @@
 // "Viajemos juntos" es un stand con hoja propia (sin número de destino ni
 // líneas para escribir); `sello` ubica el sello sobre su imagen, en % de la hoja.
 export const EMPRESAS = [
-  { id: 'viajemos',   nombre: 'Viajemos juntos', destino: 0, pagina: 1, linea: null, sello: { x: 73, y: 45, ancho: 44 } },
+  { id: 'viajemos',   nombre: 'Viajemos juntos', destino: 0, pagina: 1, linea: null, sello: { x: 74, y: 41, ancho: 42 } },
   { id: 'epm',        nombre: 'EPM',        destino: 1, pagina: 3, linea: 77.2 },
   { id: 'cardiovid',  nombre: 'Cardio VID', destino: 2, pagina: 4, linea: 77.2 },
   { id: 'isa',        nombre: 'ISA',        destino: 3, pagina: 5, linea: 77.2 },

@@ -14,7 +14,7 @@ Pasaporte digital de las Pasantías CUEE 2.0 (ITM). Cada mentor tiene su QR. El 
 | `pasaporte.html` | Estudiante | El libro: portada, hoja de datos, 8 destinos, misión cumplida y contraportada. Se pasa la hoja deslizando, con las flechas o con el teclado. |
 | `scanner.html` | Estudiante | Escáner de QR de stands (`?e=`) y de mentores (`?m=`, registro y asistencia). También funciona si el QR se abre con la cámara normal del celular. |
 | `constancia.html` | Estudiante | Con los 3 días y los 8 sellos, genera la constancia de abordaje y participación (plantilla de Canva, página 1) con su nombre y cédula, y la descarga en PDF o imagen. |
-| `admin.html` | Organizadores | Entrada con correo y contraseña (o Google). Tabla con asistencia por día y sellos, ficha con foto y firma, exportación CSV, sorteo entre los completos (3 días + 8 sellos) y constancias de mentores en PDF (una o todas). |
+| `admin.html` | Organizadores | Entrada con correo y contraseña (o Google). Tabla con asistencia por día y sellos, ficha con foto y firma, exportación CSV, sorteo entre los completos (3 días + todos los sellos), constancia manual para estudiantes con 2 días o más, y constancias de mentores en PDF. |
 | `tools/generar-qrs.html` | Organizadores | Crea los tokens secretos y la ventana de cada día, y muestra los QR para imprimir: 11 de mentores y 8 de stands. Permite rotarlos. |
 
 En la hoja de datos el estudiante toca la foto para tomarse una, la firma para firmar con el dedo y los campos para corregirlos. En cada destino puede escribir "Lo más importante que descubrí" sobre las líneas del boceto.
@@ -37,7 +37,7 @@ La cámara del escáner necesita HTTPS (o `localhost`).
 1. **Firebase**: crea el proyecto, activa Firestore y en Authentication habilita *Correo electrónico/contraseña* (estudiantes) y *Google* (organizadores). En *Authentication > Settings > Authorized domains* agrega `<usuario>.github.io`.
 2. **Configuración**: copia la configuración web en `js/firebase-config.js` y pon los correos de los organizadores en `ADMINS`.
 3. **Reglas**: pon los mismos correos en `esAdmin()` de `firestore.rules` y publícalas (consola de Firebase > Firestore > Reglas, o `firebase deploy --only firestore:rules`). Sin reglas publicadas no hay protección.
-4. **GitHub Pages**: *Settings > Pages > Deploy from a branch > main / (root)*.
+4. **GitHub Pages y reglas**: ver la sección *GitHub Actions* (el workflow publica el sitio y las reglas en cada push a `main`).
 5. **QR**: entra a `tools/generar-qrs.html` con una cuenta organizadora. La primera vez crea los tokens en `empresas/{id}`. Imprime un QR por stand.
 6. **Prueba**: registra un estudiante en Android y otro en iPhone, sella un par de stands y revisa `admin.html`.
 
@@ -64,6 +64,33 @@ La cámara del escáner necesita HTTPS (o `localhost`).
 
 Cambios respecto a la especificación: el catálogo de empresas vive en `js/empresas.js` (no en `empresasPublic`), porque cada empresa ya tiene su hoja y su sello fijos en el diseño; y se añadieron las notas "Lo más importante que descubrí", la foto y la firma (colección `fotos`), que están en el boceto.
 
+## GitHub Actions
+
+| Workflow | Cuándo | Qué hace |
+|---|---|---|
+| `desplegar.yml` | Cada push a `main` (y a mano) | Revisa la sintaxis del JavaScript, corre las pruebas de `firestore.rules` en el emulador (`pruebas/reglas.test.mjs`), publica las reglas en Firebase y despliega el sitio en GitHub Pages. En pull requests solo corre las pruebas. |
+| `limpiar-datos.yml` | A mano: *Actions > Limpiar datos de prueba > Run workflow* | Borra estudiantes, sellos, asistencias, fotos y (opcional) las cuentas de los estudiantes. Conserva tokens de stands y mentores, fechas y cuentas de organizadores. Pide escribir `BORRAR`; con *simular* solo cuenta. |
+
+**Configuración (una sola vez):**
+
+1. *Settings > Pages > Build and deployment > Source*: **GitHub Actions**.
+2. Cuenta de servicio para Firebase. En Cloud Shell del proyecto:
+
+   ```bash
+   gcloud iam service-accounts create github-actions --display-name="GitHub Actions"
+   for rol in roles/firebase.admin roles/serviceusage.serviceUsageConsumer; do
+     gcloud projects add-iam-policy-binding pasaporte-itm \
+       --member="serviceAccount:github-actions@pasaporte-itm.iam.gserviceaccount.com" --role="$rol" --condition=None
+   done
+   gcloud iam service-accounts keys create clave.json \
+     --iam-account=github-actions@pasaporte-itm.iam.gserviceaccount.com
+   cat clave.json && rm clave.json
+   ```
+
+3. Copia todo el JSON y guárdalo en *Settings > Secrets and variables > Actions > New repository secret* con el nombre **`FIREBASE_SERVICE_ACCOUNT`**. No lo subas al repositorio.
+
+Probar en local: `npm ci --prefix pruebas && npx firebase-tools emulators:exec --only firestore "node pruebas/reglas.test.mjs"` (requiere Java). La limpieza contra el emulador: `npm ci --prefix tools` y `npx firebase-tools emulators:exec --only firestore,auth "node tools/limpiar-datos.mjs --cuentas"`.
+
 ## Organizadores
 
 - `hahiguit@gmail.com` entra con Google.
@@ -82,7 +109,7 @@ Si cambia el diseño en Canva, exporta el PDF con el mismo orden de páginas y e
 python3 tools/extraer_assets.py "imagenes_referencia/Pasaporte CUEE 2.0.pdf"
 ```
 
-Requiere `pdftocairo` (poppler), Pillow y numpy. También genera la hoja de bienvenida "Viajemos juntos" (`01b-viajemos.webp`) a partir de la imagen de WhatsApp de `imagenes_referencia/`, y las plantillas de constancia de estudiante y mentor (a la de mentor le borra la línea de cédula). Si cambian las líneas de "Lo más importante que descubrí", ajusta `linea` en `js/empresas.js`. El script también corrige el "DESTINO 6" de la hoja de Colcafé a "DESTINO 8" (función `corregir_destino_8`, con Montserrat de `tools/fuentes/`, licencia OFL); si el PDF ya viene corregido, quita esa llamada.
+Requiere `pdftocairo` (poppler), Pillow y numpy. También genera la hoja del stand "Viajemos juntos" (`01b-viajemos.webp`, a partir de la imagen de WhatsApp de `imagenes_referencia/`) y su sello (`assets/sellos/viajemos.webp`, dibujado con Montserrat), y las plantillas de constancia de estudiante y mentor (a la de mentor le borra la línea de cédula). Si cambian las líneas de "Lo más importante que descubrí", ajusta `linea` en `js/empresas.js`. El script también corrige el "DESTINO 6" de la hoja de Colcafé a "DESTINO 8" (función `corregir_destino_8`, con Montserrat de `tools/fuentes/`, licencia OFL); si el PDF ya viene corregido, quita esa llamada.
 
 ## Créditos
 

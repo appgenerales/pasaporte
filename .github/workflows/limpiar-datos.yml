@@ -30,7 +30,7 @@ concurrency:
 jobs:
   limpiar:
     name: Limpiar datos
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Confirmación
         if: inputs.confirmacion != 'BORRAR' && !inputs.simular
@@ -38,11 +38,11 @@ jobs:
           echo "::error::Para borrar escribe exactamente BORRAR en la confirmación (o marca 'simular')."
           exit 1
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: tools/package-lock.json
 

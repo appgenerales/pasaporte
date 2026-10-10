@@ -70,7 +70,7 @@ function pintarSello(capa, empresa, animar = false) {
   let el;
   if (ts) {
     el = document.createElement('div');
-    el.className = 'sello' + (animar ? ' estampando' : '');
+    el.className = 'sello' + (animar ? ' estampando' : '') + (empresa.sello ? ' sobre-imagen' : '');
     el.style.setProperty('--giro', giroSello(empresa.id));
     el.innerHTML = `<img src="${rutaSello(empresa.id)}" alt="Sello de ${escapar(empresa.nombre)}">
       <span class="sello-fecha">${fechaSello(ts)}</span>`;

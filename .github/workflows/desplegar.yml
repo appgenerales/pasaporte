@@ -26,17 +26,17 @@ env:
 jobs:
   pruebas:
     name: Pruebas
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: pruebas/package-lock.json
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
@@ -54,13 +54,13 @@ jobs:
     name: Publicar reglas de Firestore
     needs: pruebas
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Credenciales de Firebase
         id: credenciales
@@ -83,7 +83,7 @@ jobs:
     name: Desplegar sitio
     needs: pruebas
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       pages: write
       id-token: write
@@ -91,7 +91,7 @@ jobs:
       name: github-pages
       url: ${{ steps.despliegue.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Solo lo que se sirve: sin PDFs de referencia, scripts ni pruebas.
       - name: Armar el sitio
@@ -102,12 +102,12 @@ jobs:
           touch _sitio/.nojekyll
           du -sh _sitio
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _sitio
 
       - name: Desplegar en GitHub Pages
         id: despliegue
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

@@ -318,6 +318,33 @@ a {
   padding: 4cqw;
 }
 
+/* Sobre una foto la tinta "multiply" se pierde: tinta opaca con halo blanco */
+.sello.sobre-imagen {
+  mix-blend-mode: normal;
+  opacity: 1;
+  filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 5px rgba(255, 255, 255, 0.95));
+}
+.sello.sobre-imagen.estampando {
+  animation-name: estampar-imagen;
+}
+@keyframes estampar-imagen {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--giro)) scale(1.9);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(var(--giro)) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(var(--giro)) scale(1);
+  }
+}
+.sello.sobre-imagen .sello-fecha {
+  background: rgba(255, 255, 255, 0.9);
+  color: #3f5f8f;
+}
 .sello-pendiente.sobre-imagen {
   aspect-ratio: auto;
   background: rgba(255, 255, 255, 0.82);
