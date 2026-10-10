@@ -1,0 +1,809 @@
+/* Pasaporte CUEE 2.0 — colores tomados del boceto de Canva */
+:root {
+  --azul: #102d6a;
+  --azul-hondo: #0a1f4d;
+  --azul-titulo: #0c3b69;
+  --tinta: #3f5f8f;
+  --tinta-suave: #607d9c;
+  --lima: #c8d93f;
+  --lima-oscuro: #a9bb22;
+  --papel: #f4f7fc;
+  --texto: #1b2a4a;
+  --texto-suave: #5b6b88;
+  --error: #b3261e;
+  --ok: #2e7d32;
+  --radio: 14px;
+  --sombra: 0 18px 40px rgba(3, 12, 36, 0.45);
+  --fuente: 'Montserrat', system-ui, sans-serif;
+  --fuente-datos: 'Roboto', system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--fuente);
+  color: #fff;
+  background: radial-gradient(120% 80% at 50% 0%, #17397f 0%, var(--azul) 45%, var(--azul-hondo) 100%) fixed;
+  background-color: var(--azul);
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: var(--lima);
+}
+
+.oculto {
+  display: none !important;
+}
+
+/* ---------- Botones ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.2s ease, opacity 0.2s;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+.btn-primario {
+  background: var(--lima);
+  color: var(--azul-hondo);
+  box-shadow: 0 6px 18px rgba(200, 217, 63, 0.35);
+}
+.btn-primario:hover {
+  background: #d4e34f;
+}
+.btn-secundario {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.btn-claro {
+  background: #fff;
+  color: var(--azul);
+  border: 1px solid #c9d4e8;
+}
+.btn-icono {
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+}
+.btn svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+/* ---------- Cabecera de la app ---------- */
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  padding-top: max(10px, env(safe-area-inset-top));
+}
+.marca {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  text-decoration: none;
+  color: #fff;
+}
+.marca small {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+.marca strong {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.marca strong span {
+  color: var(--lima);
+}
+
+.progreso {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.progreso-anillo {
+  --p: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--lima) calc(var(--p) * 1%), rgba(255, 255, 255, 0.15) 0);
+  transition: --p 0.6s;
+}
+.progreso-anillo span {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--azul);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* ---------- Libro ---------- */
+.escena {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100dvh;
+}
+.libro-zona {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 16px;
+  min-height: 0;
+}
+#libro-marco {
+  width: 360px;
+  filter: drop-shadow(0 22px 30px rgba(0, 0, 0, 0.45));
+  transition: transform 0.8s ease;
+}
+/* Libro cerrado en pantallas anchas: se centra la tapa en lugar de la doble página */
+#libro-marco.tapa-delante {
+  transform: translateX(-25%);
+}
+#libro-marco.tapa-detras {
+  transform: translateX(25%);
+}
+#libro.cargando {
+  visibility: hidden;
+}
+
+.pagina {
+  background: #fff;
+  overflow: hidden;
+  container-type: size;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pagina > .fondo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+.pagina .capa {
+  position: absolute;
+  inset: 0;
+}
+.pagina button {
+  -webkit-tap-highlight-color: transparent;
+}
+.pagina button * {
+  pointer-events: none;
+}
+
+/* Sello estampado sobre la hoja del destino.
+   Caja fija para que los sellos cuadrados no bajen hasta el texto. */
+.sello {
+  position: absolute;
+  left: 50%;
+  top: 45.5%;
+  width: 66cqw;
+  height: 31cqh;
+  transform: translate(-50%, -50%) rotate(var(--giro, -4deg));
+  mix-blend-mode: multiply;
+  opacity: 0.93;
+  pointer-events: none;
+}
+.sello img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.sello-fecha {
+  position: absolute;
+  left: 50%;
+  bottom: -3.2cqh;
+  transform: translateX(-50%) rotate(calc(var(--giro, -4deg) * -1.5));
+  white-space: nowrap;
+  font: 700 3.3cqw/1 'Roboto Mono', ui-monospace, monospace;
+  letter-spacing: 0.08em;
+  color: #5a6f97;
+  border: 0.45cqw solid currentColor;
+  border-radius: 1cqw;
+  padding: 0.9cqw 1.8cqw;
+  opacity: 0.9;
+}
+.sello.estampando {
+  animation: estampar 0.75s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+@keyframes estampar {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--giro)) scale(1.9);
+    filter: blur(2px);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(var(--giro)) scale(0.94);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0.93;
+    transform: translate(-50%, -50%) rotate(var(--giro)) scale(1);
+  }
+}
+.sello-pendiente {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%);
+  width: 58cqw;
+  aspect-ratio: 1.45;
+  border: 0.6cqw dashed rgba(63, 95, 143, 0.28);
+  border-radius: 3cqw;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: rgba(63, 95, 143, 0.55);
+  font: 600 3.3cqw/1.35 var(--fuente);
+  padding: 4cqw;
+}
+
+/* "Lo más importante que descubrí": se escribe sobre las líneas del boceto */
+.nota {
+  position: absolute;
+  left: 19%;
+  width: 68%;
+  top: calc(var(--linea) * 1cqh - 4.75cqh);
+  height: calc(5.36cqh * 3);
+  padding: 0;
+  margin: 0;
+  border: 0;
+  outline: 0;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: #1d3a78;
+  font: 500 4.3cqh/5.36cqh 'Caveat', 'Segoe Print', cursive;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.nota::placeholder {
+  color: rgba(63, 95, 143, 0.38);
+}
+.nota:focus {
+  background: rgba(200, 217, 63, 0.1);
+  border-radius: 4px;
+}
+.nota-estado {
+  position: absolute;
+  right: 12%;
+  top: calc(var(--linea) * 1cqh - 10.2cqh);
+  font: 600 2.6cqw/1 var(--fuente);
+  color: var(--ok);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.nota-estado.visible {
+  opacity: 0.8;
+}
+
+/* Hoja de datos: el boceto está girado 90°, así que la capa también */
+.datos-giro {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100cqh;
+  height: 100cqw;
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+.datos-giro > * {
+  position: absolute;
+}
+.campo {
+  left: 40.8%;
+  width: 51%;
+  height: 4.4%;
+  display: flex;
+  align-items: flex-end;
+  font: 500 3.5cqw/1 var(--fuente-datos);
+  color: #0d2a5e;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.02em;
+}
+.campo-apellidos { top: 33.6%; }
+.campo-nombres { top: 41.6%; }
+.campo-programa { top: 49.6%; font-size: 3cqw; }
+.campo-empresa { top: 57.6%; }
+.editar-datos {
+  left: 39.5%;
+  top: 29.5%;
+  width: 53%;
+  height: 33.5%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 1cqw;
+}
+.foto-btn {
+  left: 12.4%;
+  top: 31%;
+  width: 21.4%;
+  height: 43.6%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  overflow: hidden;
+  border-radius: 0.6cqw;
+}
+.foto-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.firma-btn {
+  left: 62%;
+  top: 63.2%;
+  width: 30%;
+  height: 8.6%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.firma-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.pista {
+  position: absolute;
+  inset: auto 0 6% 0;
+  text-align: center;
+  font: 700 2.4cqw/1.2 var(--fuente);
+  color: var(--tinta);
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 1cqw;
+  padding: 0.8cqw 0.6cqw;
+  margin: 0 6%;
+}
+.firma-btn .pista {
+  inset: 15% 18% auto 18%;
+  margin: 0;
+}
+.editar-datos .pista {
+  inset: auto auto 4% 60%;
+  margin: 0;
+  padding: 0.8cqw 2cqw;
+}
+.datos-giro.lleno .editar-datos .pista {
+  display: none;
+}
+
+/* Página de misión cumplida */
+.mision-velo {
+  position: absolute;
+  left: 3%;
+  top: 8%;
+  width: 66%;
+  height: 33%;
+  display: grid;
+  place-items: center;
+  background: rgba(244, 247, 252, 0.72);
+  backdrop-filter: grayscale(1);
+  -webkit-backdrop-filter: grayscale(1);
+  border-radius: 3cqw;
+  text-align: center;
+  color: var(--azul-titulo);
+  font: 700 3.6cqw/1.3 var(--fuente);
+  padding: 4cqw;
+  transition: opacity 0.8s ease;
+}
+.mision-velo strong {
+  display: block;
+  font-size: 6cqw;
+}
+.completo .mision-velo {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- Navegación bajo el libro ---------- */
+.navegacion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px 6px;
+  width: 100%;
+  max-width: 520px;
+}
+.navegacion .indicador {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 1.3em;
+  opacity: 0.9;
+}
+.acciones {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 16px max(14px, env(safe-area-inset-bottom));
+  width: 100%;
+}
+.acciones .btn-primario {
+  flex: 1;
+  max-width: 420px;
+}
+
+/* ---------- Avisos ---------- */
+.aviso {
+  position: fixed;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 20px);
+  max-width: min(92vw, 440px);
+  background: #fff;
+  color: var(--texto);
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--sombra);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 50;
+  text-align: center;
+}
+.aviso.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.aviso.error {
+  border-left: 5px solid var(--error);
+}
+.aviso.exito {
+  border-left: 5px solid var(--lima-oscuro);
+}
+
+/* ---------- Diálogos ---------- */
+dialog {
+  border: 0;
+  padding: 0;
+  border-radius: 18px;
+  width: min(92vw, 460px);
+  max-height: 90dvh;
+  background: var(--papel);
+  color: var(--texto);
+  box-shadow: var(--sombra);
+}
+dialog::backdrop {
+  background: rgba(5, 14, 38, 0.7);
+  backdrop-filter: blur(3px);
+}
+.dialogo-cuerpo {
+  padding: 22px 20px 18px;
+}
+.dialogo-cuerpo h2 {
+  margin: 0 0 4px;
+  color: var(--azul-titulo);
+  font-size: 20px;
+}
+.dialogo-cuerpo p {
+  margin: 0 0 14px;
+  color: var(--texto-suave);
+  font-size: 14px;
+}
+.dialogo-botones {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Formularios con la estética del pasaporte ---------- */
+.campo-form {
+  display: block;
+  margin-bottom: 14px;
+}
+.campo-form span {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--texto-suave);
+  margin-bottom: 2px;
+}
+.campo-form span em {
+  font-style: normal;
+  font-weight: 500;
+  opacity: 0.8;
+}
+.campo-form input,
+.campo-form select {
+  width: 100%;
+  border: 0;
+  border-bottom: 2px dotted #7f8fb0;
+  background: transparent;
+  padding: 8px 2px;
+  font-family: var(--fuente-datos);
+  font-size: 17px;
+  font-weight: 500;
+  color: #0d2a5e;
+  text-transform: uppercase;
+  border-radius: 0;
+}
+.campo-form input::placeholder {
+  text-transform: none;
+  color: #a3aec4;
+  font-weight: 400;
+}
+.campo-form input:focus,
+.campo-form select:focus {
+  outline: 0;
+  border-bottom: 2px solid var(--azul);
+  background: rgba(16, 45, 106, 0.04);
+}
+.campo-form input[type='email'],
+.campo-form .sin-mayus {
+  text-transform: none;
+}
+
+.lienzo-firma {
+  width: 100%;
+  aspect-ratio: 3 / 1;
+  background: #fff;
+  border: 2px dashed #b5c1d9;
+  border-radius: 12px;
+  touch-action: none;
+  display: block;
+}
+
+/* ---------- Registro (index) ---------- */
+.registro {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  justify-items: center;
+  gap: 18px;
+  padding: 20px 16px 32px;
+}
+.registro-portada {
+  width: min(64vw, 260px);
+  border-radius: 6px 14px 14px 6px;
+  box-shadow: var(--sombra), inset 6px 0 10px rgba(0, 0, 0, 0.3);
+  display: block;
+  transform: perspective(900px) rotateY(-12deg);
+}
+.tarjeta {
+  width: min(100%, 460px);
+  background: linear-gradient(180deg, #ffffff 0%, var(--papel) 60%, #e6edf8 100%);
+  color: var(--texto);
+  border-radius: 18px;
+  box-shadow: var(--sombra);
+  padding: 22px 20px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.tarjeta h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--azul-titulo);
+  letter-spacing: 0.01em;
+}
+.tarjeta .sub {
+  margin: 2px 0 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--texto-suave);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.tarjeta .nota-privacidad {
+  font-size: 12px;
+  color: var(--texto-suave);
+  margin: 10px 0 0;
+  line-height: 1.45;
+}
+.tarjeta .btn-primario {
+  width: 100%;
+  margin-top: 6px;
+  background: var(--azul);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(16, 45, 106, 0.35);
+}
+.tarjeta .btn-primario:hover {
+  background: #17397f;
+}
+.mensaje-error {
+  color: var(--error);
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 1.2em;
+  margin: 4px 0 0;
+}
+.cargador {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  gap: 14px;
+  text-align: center;
+  font-weight: 600;
+}
+.girando {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--lima);
+  animation: girar 0.9s linear infinite;
+}
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (min-width: 860px) {
+  .registro {
+    grid-template-columns: auto 460px;
+    justify-content: center;
+    gap: 64px;
+  }
+  .registro-portada {
+    width: 320px;
+  }
+}
+
+/* ---------- Escáner ---------- */
+.escaner {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.escaner-cuerpo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px 24px;
+  text-align: center;
+}
+.escaner-cuerpo h1 {
+  font-size: 20px;
+  margin: 6px 0 0;
+}
+.escaner-cuerpo p {
+  margin: 0;
+  opacity: 0.85;
+  font-size: 14px;
+  max-width: 34em;
+}
+#lector {
+  width: min(100%, 420px);
+  aspect-ratio: 1;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #000;
+  position: relative;
+  box-shadow: var(--sombra);
+}
+#lector video {
+  object-fit: cover;
+}
+.resultado {
+  width: min(100%, 420px);
+  background: var(--papel);
+  color: var(--texto);
+  border-radius: 18px;
+  padding: 22px 20px;
+  box-shadow: var(--sombra);
+}
+.resultado h2 {
+  margin: 8px 0 6px;
+  color: var(--azul-titulo);
+}
+.resultado p {
+  color: var(--texto-suave);
+  opacity: 1;
+}
+.resultado .btn {
+  margin-top: 14px;
+}
+.resultado.error h2 {
+  color: var(--error);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sello.estampando {
+    animation: none;
+  }
+  .registro-portada {
+    transform: none;
+  }
+}
+
+/* La escena ocupa justo la pantalla para que el libro quepa sin desplazarse */
+.escena {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Celular acostado: el pasaporte se lee en vertical */
+.girar-celular {
+  display: none;
+}
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  .girar-celular {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    background: var(--azul);
+    font-weight: 700;
+    padding: 24px;
+  }
+  .girar-celular svg {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 10px;
+    color: var(--lima);
+  }
+}

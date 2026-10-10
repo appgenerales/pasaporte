@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#102d6a">
+  <title>Sellar pasaporte · CUEE 2.0</title>
+  <link rel="icon" href="assets/sellos/epm.webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+</head>
+<body>
+  <div class="escaner">
+    <header class="barra">
+      <a class="marca" href="pasaporte.html" aria-label="Volver al pasaporte">
+        <small>PASAPORTE</small>
+        <strong>CUEE <span>2.0</span></strong>
+      </a>
+      <a class="btn btn-secundario" href="pasaporte.html">Mi pasaporte</a>
+    </header>
+
+    <main class="escaner-cuerpo">
+      <section id="vista-camara" class="oculto">
+        <h1>Escanea el QR del stand</h1>
+        <p>Apunta la cámara al código que muestra la empresa al terminar la charla.</p>
+        <div id="lector" style="margin-top: 16px"></div>
+        <p id="estado-camara" style="margin-top: 12px"></p>
+      </section>
+
+      <section id="vista-procesando" class="cargador oculto" style="min-height: 50dvh">
+        <div>
+          <div class="girando" style="margin: 0 auto 14px"></div>
+          Sellando tu pasaporte…
+        </div>
+      </section>
+
+      <section id="vista-error" class="resultado error oculto" role="alert">
+        <h2>No se pudo sellar</h2>
+        <p id="mensaje-error"></p>
+        <button class="btn btn-primario" id="reintentar" type="button">Escanear de nuevo</button>
+        <a class="btn btn-claro" href="pasaporte.html">Ver mi pasaporte</a>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="js/scanner.js"></script>
+</body>
+</html>

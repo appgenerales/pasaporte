@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102d6a">
+  <meta name="robots" content="noindex">
+  <title>Seguimiento · Pasaporte CUEE 2.0</title>
+  <link rel="icon" href="assets/sellos/epm.webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .admin { max-width: 1200px; margin: 0 auto; padding: 0 16px 40px; }
+    .admin-panel { background: var(--papel); color: var(--texto); border-radius: 18px; padding: 20px; box-shadow: var(--sombra); }
+    .resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .dato { background: #fff; border-radius: 14px; padding: 14px 16px; border: 1px solid #dfe6f3; }
+    .dato b { display: block; font-size: 28px; color: var(--azul-titulo); }
+    .dato span { font-size: 12px; font-weight: 600; color: var(--texto-suave); text-transform: uppercase; letter-spacing: .06em; }
+    .herramientas { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+    .herramientas input, .herramientas select { min-height: 44px; border-radius: 999px; border: 1px solid #c9d4e8; padding: 0 16px; background: #fff; color: var(--texto); }
+    .herramientas input { flex: 1; min-width: 200px; }
+    .tabla-scroll { overflow-x: auto; border-radius: 12px; border: 1px solid #dfe6f3; background: #fff; }
+    table { border-collapse: collapse; width: 100%; font-size: 14px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #edf1f8; white-space: nowrap; }
+    th { background: #eef3fb; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--texto-suave); position: sticky; top: 0; }
+    td.num { text-align: center; font-variant-numeric: tabular-nums; font-weight: 700; }
+    .chip { display: inline-block; width: 22px; height: 22px; border-radius: 50%; margin-right: 3px; font-size: 10px; line-height: 22px; text-align: center; font-weight: 700; background: #edf1f8; color: #a5b1c8; }
+    .chip.si { background: var(--azul); color: #fff; }
+    .ok { color: var(--ok); font-weight: 800; }
+    .ganador { margin-top: 16px; padding: 18px; border-radius: 14px; background: var(--azul); color: #fff; text-align: center; }
+    .ganador b { display: block; font-size: 24px; color: var(--lima); margin-top: 4px; }
+    .acceso { max-width: 420px; margin: 10vh auto 0; text-align: center; }
+    .aviso-demo { background: #fff6d6; color: #6b5300; border-radius: 12px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; }
+  </style>
+</head>
+<body>
+  <header class="barra admin">
+    <a class="marca" href="admin.html"><small>SEGUIMIENTO</small><strong>CUEE <span>2.0</span></strong></a>
+    <div class="herramientas" style="margin:0">
+      <a class="btn btn-secundario" href="tools/generar-qrs.html">QR de los stands</a>
+      <button class="btn btn-secundario oculto" id="salir" type="button">Salir</button>
+    </div>
+  </header>
+
+  <main class="admin">
+    <section id="vista-acceso" class="admin-panel acceso oculto">
+      <h2 style="color:var(--azul-titulo);margin-top:0">Acceso de organizadores</h2>
+      <p style="color:var(--texto-suave)">Inicia sesión con tu cuenta de Google autorizada.</p>
+      <button class="btn btn-primario" id="entrar" type="button" style="background:var(--azul);color:#fff">Entrar con Google</button>
+      <p id="error-acceso" class="mensaje-error"></p>
+    </section>
+
+    <section id="vista-panel" class="admin-panel oculto">
+      <div id="aviso-demo" class="aviso-demo oculto">
+        Modo demo: Firebase no está configurado, así que solo ves el pasaporte guardado en este navegador.
+      </div>
+      <div class="resumen">
+        <div class="dato"><b id="r-estudiantes">0</b><span>Estudiantes</span></div>
+        <div class="dato"><b id="r-sellos">0</b><span>Sellos entregados</span></div>
+        <div class="dato"><b id="r-completos">0</b><span>Pasaportes completos</span></div>
+        <div class="dato"><b id="r-promedio">0</b><span>Promedio de sellos</span></div>
+      </div>
+      <div class="herramientas">
+        <input id="buscar" type="search" placeholder="Buscar por nombre, programa o contacto">
+        <select id="filtro">
+          <option value="todos">Todos</option>
+          <option value="completos">Completos</option>
+          <option value="incompletos">Incompletos</option>
+        </select>
+        <button class="btn btn-claro" id="recargar" type="button">Actualizar</button>
+        <button class="btn btn-claro" id="csv" type="button">Exportar CSV</button>
+        <button class="btn btn-primario" id="sortear" type="button">Sortear ganador</button>
+      </div>
+      <div class="tabla-scroll">
+        <table>
+          <thead><tr id="cabecera"></tr></thead>
+          <tbody id="filas"></tbody>
+        </table>
+      </div>
+      <div id="ganador" class="ganador oculto" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

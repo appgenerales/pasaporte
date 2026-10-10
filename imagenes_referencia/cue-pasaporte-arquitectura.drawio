@@ -1,0 +1,49 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Arquitectura CUE" id="cue-arq">
+    <mxGraphModel dx="1200" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="700">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="est" value="Estudiante&#xa;(celular)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="280" width="140" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="stand" value="Stand de empresa&#xa;(muestra QR)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="140" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="gh" value="GitHub Pages&#xa;index, pasaporte, scanner, admin&#xa;(HTML, CSS, JS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="330" y="280" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="auth" value="Firebase Auth&#xa;(anónimo y Google)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="650" y="150" width="180" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="fs" value="Firestore&#xa;estudiantes, sellos,&#xa;empresas, empresasPublic" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="660" y="290" width="160" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="rules" value="firestore.rules&#xa;(validan uid y token)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="650" y="450" width="180" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="org" value="Organizador&#xa;(admin.html, login Google)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="330" y="480" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" value="escanea QR" style="endArrow=classic;html=1;dashed=1;" edge="1" parent="1" source="stand" target="est">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" value="abre la web" style="endArrow=classic;html=1;" edge="1" parent="1" source="est" target="gh">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" value="sesión" style="endArrow=classic;html=1;" edge="1" parent="1" source="gh" target="auth">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" value="lee y escribe sellos" style="endArrow=classic;startArrow=classic;html=1;" edge="1" parent="1" source="gh" target="fs">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" value="protegen" style="endArrow=classic;html=1;" edge="1" parent="1" source="rules" target="fs">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e6" value="seguimiento y sorteo" style="endArrow=classic;html=1;" edge="1" parent="1" source="org" target="gh">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

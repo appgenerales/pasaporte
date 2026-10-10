@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>QR de los stands · CUEE 2.0</title>
+  <link rel="icon" href="../assets/sellos/epm.webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+  <style>
+    .contenedor { max-width: 1100px; margin: 0 auto; padding: 0 16px 40px; }
+    .intro { background: var(--papel); color: var(--texto); border-radius: 18px; padding: 18px 20px; margin-bottom: 18px; font-size: 14px; }
+    .intro p { margin: 0 0 8px; }
+    .rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+    .tarjeta-qr { background: #fff; color: var(--texto); border-radius: 18px; padding: 22px 20px; text-align: center; box-shadow: var(--sombra); break-inside: avoid; page-break-inside: avoid; }
+    .tarjeta-qr .sello-img { height: 70px; mix-blend-mode: multiply; }
+    .tarjeta-qr h2 { margin: 6px 0 0; color: var(--azul-titulo); font-size: 28px; font-weight: 800; letter-spacing: .02em; }
+    .tarjeta-qr h3 { margin: 0 0 14px; color: var(--tinta-suave); font-size: 18px; }
+    .tarjeta-qr .qr { display: inline-block; padding: 10px; background: #fff; border: 3px solid var(--azul); border-radius: 14px; }
+    .tarjeta-qr .qr img, .tarjeta-qr .qr canvas { display: block; width: 220px; height: 220px; }
+    .tarjeta-qr .instruccion { font-weight: 700; color: var(--azul); margin: 12px 0 4px; }
+    .tarjeta-qr .url { font-size: 10px; color: #8a97b1; word-break: break-all; margin: 0; }
+    .tarjeta-qr .botones { display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+    .tarjeta-qr .btn { min-height: 38px; font-size: 13px; padding: 0 14px; }
+    @media print {
+      body { background: #fff; }
+      .barra, .intro, .botones { display: none !important; }
+      .rejilla { grid-template-columns: 1fr 1fr; gap: 10mm; }
+      .tarjeta-qr { box-shadow: none; border: 1px solid #ccd5e6; }
+    }
+  </style>
+</head>
+<body>
+  <header class="barra contenedor">
+    <a class="marca" href="../admin.html"><small>QR DE LOS STANDS</small><strong>CUEE <span>2.0</span></strong></a>
+    <button class="btn btn-primario" id="imprimir" type="button">Imprimir</button>
+  </header>
+
+  <main class="contenedor">
+    <section class="intro">
+      <p><b>Uso interno.</b> Cada QR lleva el identificador de la empresa y su token secreto. Imprime uno por stand.</p>
+      <p>Si un QR se filtra (por ejemplo, alguien lo fotografía y lo comparte), pulsa <b>Rotar token</b>: el QR anterior deja de sellar y hay que reemplazar el impreso.</p>
+      <p id="estado"></p>
+      <button class="btn btn-claro oculto" id="entrar" type="button">Entrar con Google</button>
+    </section>
+    <section class="rejilla" id="rejilla"></section>
+  </main>
+
+  <script type="module">
+    import { DEMO, fb } from '../js/firebase.js';
+    import { organizadorActual, entrarConGoogle } from '../js/admin-auth.js';
+    import { EMPRESAS } from '../js/empresas.js';
+
+    const $ = (s) => document.querySelector(s);
+    const base = new URL('../scanner.html', location.href).href;
+
+    function tokenNuevo() {
+      const bytes = crypto.getRandomValues(new Uint8Array(12));
+      return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    async function leerTokens() {
+      if (DEMO) return Object.fromEntries(EMPRESAS.map((e) => [e.id, `demo-${e.id}`]));
+      const { db, F } = await fb();
+      const tokens = {};
+      for (const e of EMPRESAS) {
+        const ref = F.doc(db, 'empresas', e.id);
+        const snap = await F.getDoc(ref);
+        if (snap.exists() && snap.data().token) {
+          tokens[e.id] = snap.data().token;
+        } else {
+          tokens[e.id] = tokenNuevo();
+          await F.setDoc(ref, { nombre: e.nombre, orden: e.destino, token: tokens[e.id] });
+        }
+      }
+      return tokens;
+    }
+
+    async function rotar(e) {
+      if (DEMO) return alert('En modo demo los tokens son fijos.');
+      if (!confirm(`¿Rotar el token de ${e.nombre}? El QR impreso actual dejará de funcionar.`)) return;
+      const { db, F } = await fb();
+      const token = tokenNuevo();
+      await F.setDoc(F.doc(db, 'empresas', e.id), { nombre: e.nombre, orden: e.destino, token });
+      pintarTarjeta(e, token);
+    }
+
+    function pintarTarjeta(e, token) {
+      const url = `${base}?e=${encodeURIComponent(e.id)}&t=${encodeURIComponent(token)}`;
+      let card = document.getElementById(`qr-${e.id}`);
+      if (!card) {
+        card = document.createElement('article');
+        card.className = 'tarjeta-qr';
+        card.id = `qr-${e.id}`;
+        $('#rejilla').append(card);
+      }
+      card.innerHTML = `
+        <img class="sello-img" src="../assets/sellos/${e.id}.webp" alt="">
+        <h2>DESTINO ${e.destino}</h2>
+        <h3>${e.nombre}</h3>
+        <div class="qr"></div>
+        <p class="instruccion">Escanea para sellar tu pasaporte</p>
+        <p class="url">${url}</p>
+        <div class="botones">
+          <button class="btn btn-claro" data-accion="descargar" type="button">Descargar PNG</button>
+          <button class="btn btn-claro" data-accion="rotar" type="button">Rotar token</button>
+        </div>`;
+      new QRCode(card.querySelector('.qr'), { text: url, width: 440, height: 440, correctLevel: QRCode.CorrectLevel.M });
+      card.querySelector('[data-accion="rotar"]').onclick = () => rotar(e).catch((err) => alert(err.message));
+      card.querySelector('[data-accion="descargar"]').onclick = () => {
+        const canvas = card.querySelector('.qr canvas');
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = `qr-destino-${e.destino}-${e.id}.png`;
+        a.click();
+      };
+    }
+
+    async function iniciar() {
+      $('#estado').textContent = DEMO
+        ? 'Modo demo: los QR usan el token "demo-<empresa>" y funcionan solo con el sitio en modo demo.'
+        : 'Cargando tokens…';
+      try {
+        const correo = await organizadorActual();
+        if (!correo) {
+          $('#estado').textContent = 'Inicia sesión con una cuenta de organizador para ver los QR.';
+          $('#entrar').classList.remove('oculto');
+          return;
+        }
+        const tokens = await leerTokens();
+        if (!DEMO) $('#estado').textContent = `Sesión: ${correo}`;
+        $('#entrar').classList.add('oculto');
+        EMPRESAS.forEach((e) => pintarTarjeta(e, tokens[e.id]));
+      } catch (err) {
+        console.error(err);
+        $('#estado').textContent = err.message;
+      }
+    }
+
+    $('#entrar').onclick = async () => {
+      try {
+        await entrarConGoogle();
+        iniciar();
+      } catch (err) {
+        $('#estado').textContent = err.message;
+      }
+    };
+    $('#imprimir').onclick = () => print();
+    window.addEventListener('load', iniciar);
+  </script>
+</body>
+</html>

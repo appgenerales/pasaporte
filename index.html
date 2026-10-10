@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#102d6a">
+  <title>Pasaporte CUEE 2.0</title>
+  <meta name="description" content="Pasaporte digital de las Pasantías CUEE 2.0 del ITM.">
+  <link rel="icon" href="assets/sellos/epm.webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="cargando" class="cargador">
+    <div>
+      <div class="girando" style="margin: 0 auto 14px"></div>
+      Abriendo tu pasaporte…
+    </div>
+  </div>
+
+  <main id="registro" class="registro oculto">
+    <img class="registro-portada" src="assets/paginas/00-portada.webp" alt="Portada del Pasaporte Pasantías CUEE 2.0">
+
+    <form id="form-registro" class="tarjeta" novalidate>
+      <h1>Emisión de pasaporte</h1>
+      <p class="sub">Vivamos la empresa, vivamos la universidad</p>
+
+      <label class="campo-form">
+        <span>Apellidos</span>
+        <input name="apellidos" autocomplete="family-name" required maxlength="80">
+      </label>
+      <label class="campo-form">
+        <span>Nombres</span>
+        <input name="nombres" autocomplete="given-name" required maxlength="80">
+      </label>
+      <label class="campo-form">
+        <span>Programa académico</span>
+        <input name="programa" required maxlength="120" placeholder="Ej. Ingeniería de Sistemas">
+      </label>
+      <label class="campo-form">
+        <span>Empresa <em>(opcional, si ya estás vinculado)</em></span>
+        <input name="empresa" maxlength="120">
+      </label>
+      <label class="campo-form">
+        <span>Correo institucional o documento</span>
+        <input name="contacto" class="sin-mayus" required maxlength="120" autocomplete="email" inputmode="email">
+      </label>
+
+      <button class="btn btn-primario" type="submit">Emitir mi pasaporte</button>
+      <p id="error-registro" class="mensaje-error" role="alert"></p>
+      <p class="nota-privacidad">
+        Solo usamos estos datos para el seguimiento de las Pasantías CUEE 2.0.
+        Tu foto y tu firma se guardan únicamente en este celular.
+      </p>
+    </form>
+  </main>
+
+  <script type="module" src="js/registro.js"></script>
+</body>
+</html>
