@@ -2,12 +2,14 @@
 # Pages admite un solo sitio por repositorio: se publican las dos ramas juntas,
 #   main    -> https://<usuario>.github.io/pasaporte/
 #   sandbox -> https://<usuario>.github.io/pasaporte/sandbox/  (modo pruebas, js/evento.js)
-# Ambas usan el mismo proyecto de Firebase: las reglas que quedan publicadas son
-# las de la última rama que hizo push. En pull requests solo corre las pruebas.
+# Cada rama publica las reglas en su proyecto de Firebase:
+#   main    -> pasaporte-itm       (secreto FIREBASE_SERVICE_ACCOUNT)
+#   sandbox -> sandbox-pasaporte   (secreto FIREBASE_SERVICE_ACCOUNT_SANDBOX)
+# En pull requests solo corre las pruebas.
 # Requisitos:
 #   - Settings > Pages > Source: "GitHub Actions".
-#   - Secreto FIREBASE_SERVICE_ACCOUNT (JSON de la cuenta de servicio) para
-#     publicar las reglas. Sin él, el sitio se despliega igual y avisa.
+#   - Los secretos de arriba (JSON de la cuenta de servicio de cada proyecto)
+#     para publicar las reglas. Sin ellos, el sitio se despliega igual y avisa.
 name: Desplegar
 
 on:
@@ -59,6 +61,8 @@ jobs:
     needs: pruebas
     if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/sandbox')
     runs-on: ubuntu-24.04
+    env:
+      PROYECTO: ${{ github.ref == 'refs/heads/sandbox' && 'sandbox-pasaporte' || 'pasaporte-itm' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -69,10 +73,11 @@ jobs:
       - name: Credenciales de Firebase
         id: credenciales
         env:
-          CUENTA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          CUENTA: ${{ github.ref == 'refs/heads/sandbox' && secrets.FIREBASE_SERVICE_ACCOUNT_SANDBOX || secrets.FIREBASE_SERVICE_ACCOUNT }}
+          SECRETO: ${{ github.ref == 'refs/heads/sandbox' && 'FIREBASE_SERVICE_ACCOUNT_SANDBOX' || 'FIREBASE_SERVICE_ACCOUNT' }}
         run: |
           if [ -z "$CUENTA" ]; then
-            echo "::warning::Falta el secreto FIREBASE_SERVICE_ACCOUNT: las reglas NO se publicaron."
+            echo "::warning::Falta el secreto $SECRETO: las reglas de $PROYECTO NO se publicaron."
             echo "omitir=1" >> "$GITHUB_OUTPUT"
             exit 0
           fi

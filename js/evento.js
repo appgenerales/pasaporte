@@ -1,6 +1,7 @@
 // Interruptores del evento. Se cambian aquí y se despliegan con un push.
 
 // Copia de pruebas: rama sandbox (publicada en /sandbox/) o el sitio en local.
+// Usa el proyecto de Firebase sandbox-pasaporte (ver js/firebase-config.js).
 export const SANDBOX =
   location.pathname.includes('/sandbox/') || ['localhost', '127.0.0.1'].includes(location.hostname);
 

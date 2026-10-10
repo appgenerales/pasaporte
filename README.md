@@ -74,7 +74,16 @@ Cambios respecto a la especificación: el catálogo de empresas vive en `js/empr
 | `desplegar.yml` | Cada push a `main` o `sandbox` (y a mano) | Revisa la sintaxis del JavaScript, corre las pruebas de `firestore.rules` en el emulador (`pruebas/reglas.test.mjs`), publica las reglas en Firebase y despliega el sitio en GitHub Pages: `main` en la raíz y `sandbox` en `/sandbox/` (modo pruebas). En pull requests solo corre las pruebas. |
 | `limpiar-datos.yml` | A mano: *Actions > Limpiar datos de prueba > Run workflow* | Borra estudiantes, sellos, asistencias, fotos y (opcional) las cuentas de los estudiantes. Conserva tokens de stands y mentores, fechas y cuentas de organizadores. Pide escribir `BORRAR`; con *simular* solo cuenta. |
 
-Las dos ramas comparten el proyecto de Firebase (mismos datos y mismas reglas): quedan publicadas las reglas de la última rama que hizo push. Para borrar los datos de prueba usa `limpiar-datos.yml`.
+Cada rama tiene su propio proyecto de Firebase (datos, cuentas y reglas aparte). `js/firebase-config.js` elige según la URL:
+
+| Sitio | Rama | Proyecto | Secreto para publicar reglas |
+|---|---|---|---|
+| `/pasaporte/` | `main` | `pasaporte-itm` | `FIREBASE_SERVICE_ACCOUNT` |
+| `/pasaporte/sandbox/` y `localhost` | `sandbox` | `sandbox-pasaporte` | `FIREBASE_SERVICE_ACCOUNT_SANDBOX` |
+
+Para borrar los datos de prueba usa `limpiar-datos.yml` (por defecto sobre `sandbox-pasaporte`).
+
+**Preparar el proyecto de pruebas (una sola vez):** en Cloud Shell, `bash setup-firebase.sh sandbox-pasaporte` (crea Firestore, publica las reglas, activa correo/contraseña y autoriza `appgenerales.github.io`); en la consola agrega el proveedor Google; luego `python3 tools/crear_admins.py --sandbox correo1 …` crea las cuentas de las organizadoras allí y agrega sus UID a `esAdmin()` (la lista sirve para los dos proyectos).
 
 **Configuración (una sola vez):**
 
@@ -92,7 +101,7 @@ Las dos ramas comparten el proyecto de Firebase (mismos datos y mismas reglas): 
    cat clave.json && rm clave.json
    ```
 
-3. Copia todo el JSON y guárdalo en *Settings > Secrets and variables > Actions > New repository secret* con el nombre **`FIREBASE_SERVICE_ACCOUNT`**. No lo subas al repositorio.
+3. Copia todo el JSON y guárdalo en *Settings > Secrets and variables > Actions > New repository secret* con el nombre **`FIREBASE_SERVICE_ACCOUNT`**. No lo subas al repositorio. Repite los pasos 2 y 3 en el proyecto `sandbox-pasaporte` (cambia `pasaporte-itm` por `sandbox-pasaporte` en los comandos) y guarda ese JSON como **`FIREBASE_SERVICE_ACCOUNT_SANDBOX`**.
 
 Probar en local: `npm ci --prefix pruebas && npx firebase-tools emulators:exec --only firestore "node pruebas/reglas.test.mjs"` (requiere Java). La limpieza contra el emulador: `npm ci --prefix tools` y `npx firebase-tools emulators:exec --only firestore,auth "node tools/limpiar-datos.mjs --cuentas"`.
 

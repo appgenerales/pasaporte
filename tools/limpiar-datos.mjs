@@ -6,7 +6,7 @@
 // cuentas de los organizadores (ADMINS de js/firebase-config.js y los UID
 // de esAdmin() en firestore.rules).
 //
-// Uso:   node tools/limpiar-datos.mjs [--cuentas] [--simular]
+// Uso:   node tools/limpiar-datos.mjs [--cuentas] [--simular] [--proyecto=sandbox-pasaporte]
 // Credenciales: GOOGLE_APPLICATION_CREDENTIALS con la cuenta de servicio, o
 // FIRESTORE_EMULATOR_HOST / FIREBASE_AUTH_EMULATOR_HOST para el emulador.
 // Pensado para el workflow .github/workflows/limpiar-datos.yml.
@@ -15,11 +15,11 @@ import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 
-const PROYECTO = 'pasaporte-itm';
 const COLECCIONES = ['estudiantes', 'sellos', 'asistencias', 'fotos'];
 const args = new Set(process.argv.slice(2));
 const SIMULAR = args.has('--simular');
 const CUENTAS = args.has('--cuentas');
+const PROYECTO = [...args].find((a) => a.startsWith('--proyecto='))?.slice(11) || 'pasaporte-itm';
 
 const raiz = new URL('../', import.meta.url);
 const correosAdmin = [...readFileSync(new URL('js/firebase-config.js', raiz), 'utf8')

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Configura Firebase para el Pasaporte CUEE 2.0 desde Cloud Shell.
 # Se puede correr varias veces: lo que ya existe no se toca.
+# Uso: bash setup-firebase.sh [proyecto]   (por defecto pasaporte-itm; pruebas: sandbox-pasaporte)
 set -euo pipefail
 
-PROJECT="pasaporte-itm"
+PROJECT="${1:-pasaporte-itm}"
 ADMINS="hahiguit@gmail.com"          # correos organizadores, separados por coma
 DOMINIO="appgenerales.github.io"     # dominio de GitHub Pages
 UBICACION="nam5"                     # ubicación de Firestore (NO se puede cambiar después)
