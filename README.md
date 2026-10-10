@@ -45,7 +45,7 @@ La cámara del escáner necesita HTTPS (o `localhost`).
 
 - Cada día se muestra su QR de asistencia. Si el estudiante no tiene pasaporte, el QR abre el registro y al terminar queda marcado ese día; si ya lo tiene, marca el día. Las fechas están en `DIAS` de `js/empresas.js` y los mentores (que el estudiante elige al registrarse) en `MENTORES`.
 - Interruptores en `js/evento.js`:
-  - `FECHA_ASISTENCIA_OBLIGATORIA` (hoy `false`, para pruebas): con `true` cada QR solo sirve en su fecha. Tras cambiarlo, abre `tools/generar-qrs.html` para que Firestore tome la ventana de cada día.
+  - `EXIGIR_FECHA` (hoy `false`, para pruebas): con `true` cada QR solo sirve en su fecha en el sitio principal; en sandbox y local la asistencia de cualquier día se marca siempre. Tras cambiarlo, abre `tools/generar-qrs.html` para que Firestore tome la ventana de cada día.
   - `PASAPORTE_VISIBLE_DESDE` (`2026-10-16`): antes de esa fecha el pasaporte muestra la antesala y los stands no sellan. En sandbox y en local se ve siempre.
 - El estudiante puede cerrar sesión (botón de la cabecera) y volver a entrar en cualquier celular con su correo y contraseña. Las contraseñas las guarda cifradas Firebase Authentication; nadie del equipo las ve.
 - Cada stand muestra su QR impreso. El estudiante lo escanea con "Escanear QR" o con la cámara del celular.

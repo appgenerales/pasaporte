@@ -62,7 +62,7 @@
     import { DEMO, fb } from '../js/firebase.js';
     import { organizadorActual, entrarConGoogle } from '../js/admin-auth.js';
     import { EMPRESAS, DIAS, ventanaDia, fechaLarga, etiquetaDestino } from '../js/empresas.js';
-    import { FECHA_ASISTENCIA_OBLIGATORIA } from '../js/evento.js';
+    import { FECHA_ASISTENCIA_OBLIGATORIA, SANDBOX } from '../js/evento.js';
 
     const $ = (s) => document.querySelector(s);
     const base = new URL('../scanner.html', location.href).href;
@@ -90,11 +90,10 @@
     }
 
     // dias/{id}: token del QR de asistencia y ventana en que sirve. Con la
-    // fecha obligatoria es el día exacto; si no (pruebas), todo el año del evento.
+    // fecha obligatoria es el día exacto; si no (pruebas y sandbox), cualquier fecha.
     function ventana(d) {
       if (FECHA_ASISTENCIA_OBLIGATORIA) return ventanaDia(d);
-      const anio = d.fecha.slice(0, 4);
-      return { inicio: new Date(`${anio}-01-01T00:00:00-05:00`), fin: new Date(`${Number(anio) + 1}-01-01T00:00:00-05:00`) };
+      return { inicio: new Date('2020-01-01T00:00:00-05:00'), fin: new Date('2100-01-01T00:00:00-05:00') };
     }
 
     async function leerTokensDias() {
@@ -212,7 +211,9 @@
     $('#imprimir').onclick = () => print();
     $('#modo-fecha').innerHTML = FECHA_ASISTENCIA_OBLIGATORIA
       ? `Cada QR solo sirve en su fecha (del ${fechaLarga(DIAS[0].fecha)} al ${fechaLarga(DIAS[DIAS.length - 1].fecha)}, hora de Colombia).`
-      : '<b>Modo pruebas:</b> los QR de asistencia sirven en cualquier fecha (activa <code>FECHA_ASISTENCIA_OBLIGATORIA</code> en <code>js/evento.js</code> y vuelve a abrir esta página antes del evento).';
+      : SANDBOX
+        ? '<b>Sandbox:</b> los QR de asistencia sirven en cualquier fecha.'
+        : '<b>Modo pruebas:</b> los QR de asistencia sirven en cualquier fecha (pon <code>EXIGIR_FECHA = true</code> en <code>js/evento.js</code> y vuelve a abrir esta página antes del evento).';
     window.addEventListener('load', iniciar);
   </script>
 </body>
