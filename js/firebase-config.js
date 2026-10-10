@@ -1,22 +1,19 @@
-// Configuración web de Firebase. Es pública por diseño: la protección real
-// está en firestore.rules. Pega aquí los valores de
-// Consola de Firebase > Configuración del proyecto > Tus apps > Web.
+// Configuración web de Firebase (proyecto pasaporte-itm). Es pública por
+// diseño: la protección real está en firestore.rules.
 //
-// Mientras apiKey siga con el texto de ejemplo, el sitio funciona en
-// MODO DEMO: todo se guarda en este navegador (localStorage) y los QR de
-// prueba usan el token "demo-<empresaId>".
+// Para volver al MODO DEMO (todo en localStorage, QR con token
+// "demo-<empresaId>"), cambia apiKey por 'PEGAR_API_KEY'.
 export const firebaseConfig = {
-  apiKey: 'PEGAR_API_KEY',
-  authDomain: 'TU-PROYECTO.firebaseapp.com',
-  projectId: 'TU-PROYECTO',
-  storageBucket: 'TU-PROYECTO.appspot.com',
-  messagingSenderId: '000000000000',
-  appId: '1:000000000000:web:0000000000000000',
+  apiKey: 'AIzaSyCaHuhROO9tgRWQtBcuqPRm9LYzt7d-TEo',
+  authDomain: 'pasaporte-itm.firebaseapp.com',
+  projectId: 'pasaporte-itm',
+  storageBucket: 'pasaporte-itm.firebasestorage.app',
+  messagingSenderId: '984123129153',
+  appId: '1:984123129153:web:e149f33175f9f67e5035c0',
 };
 
 // Correos que pueden entrar a admin.html y tools/generar-qrs.html.
 // Debe coincidir con la lista de esAdmin() en firestore.rules.
 export const ADMINS = [
-  'organizador1@universidad.edu',
-  'organizador2@universidad.edu',
+  'hahiguit@gmail.com',
 ];

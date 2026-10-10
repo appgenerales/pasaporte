@@ -6,7 +6,7 @@ service cloud.firestore {
     function esAdmin() {
       return request.auth != null
         && request.auth.token.email_verified == true
-        && request.auth.token.email in ['organizador1@universidad.edu', 'organizador2@universidad.edu'];
+        && request.auth.token.email in ['hahiguit@gmail.com'];
     }
 
     function texto(v, max) {
