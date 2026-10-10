@@ -48,9 +48,10 @@ export function rutaSello(id) {
   return `assets/sellos/${id}.webp`;
 }
 
-// Días del evento. La asistencia se marca escaneando el QR de un mentor y
-// cuenta para el día en curso (hora de Colombia). Si cambian las fechas,
-// vuelve a abrir tools/generar-qrs.html para que Firestore tome las nuevas.
+// Días del evento. Cada día tiene su QR de asistencia (dias/{id}.token en
+// Firestore). Si FECHA_ASISTENCIA_OBLIGATORIA (js/evento.js) está activo, el QR
+// solo sirve en su `fecha` (hora de Colombia). Si cambian las fechas, vuelve a
+// abrir tools/generar-qrs.html para que Firestore tome las nuevas.
 export const DIAS = [
   { id: 'dia1', nombre: 'Día 1', fecha: '2026-10-14' },
   { id: 'dia2', nombre: 'Día 2', fecha: '2026-10-15' },
@@ -70,9 +71,8 @@ export function diaDeHoy(fecha = new Date()) {
   }) || null;
 }
 
-// Mentores de navegación y acompañamiento. Cada uno tiene su QR: el primer
-// día abre el registro y los días siguientes marca la asistencia.
-// El token secreto de cada QR vive en Firestore (mentores/{id}).
+// Mentores de navegación y acompañamiento: el estudiante elige el suyo al
+// registrarse. También se usan para las constancias de mentor.
 export const MENTORES = [
   { id: 'andres-montoya', nombre: 'Andrés Felipe Montoya Tobón' },
   { id: 'cristian-bocanegra', nombre: 'Cristian David Bocanegra Villazon' },

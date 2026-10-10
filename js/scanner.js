@@ -1,4 +1,4 @@
-import { usuarioActual, leerPerfil, pendiente, guardarMentor } from './auth.js';
+import { usuarioActual, leerPerfil, pendiente } from './auth.js';
 import { sellar, registrarAsistencia, ErrorSello } from './sellos.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -10,7 +10,7 @@ function mostrar(id) {
   }
 }
 
-// QR de empresa: ?e=<empresa>&t=<token>. QR de mentor (registro y asistencia): ?m=<mentor>&t=<token>.
+// QR de stand: ?e=<empresa>&t=<token>. QR de asistencia del día: ?d=<dia>&t=<token>.
 // Acepta la URL completa del QR o solo sus parámetros.
 function leerQR(texto) {
   try {
@@ -18,7 +18,7 @@ function leerQR(texto) {
     const t = p.get('t');
     if (!t) return null;
     if (p.get('e')) return { tipo: 'sello', id: p.get('e'), t };
-    if (p.get('m')) return { tipo: 'mentor', id: p.get('m'), t };
+    if (p.get('d')) return { tipo: 'asistencia', id: p.get('d'), t };
     return null;
   } catch {
     return null;
@@ -26,7 +26,7 @@ function leerQR(texto) {
 }
 
 function query(qr) {
-  return `${qr.tipo === 'sello' ? 'e' : 'm'}=${encodeURIComponent(qr.id)}&t=${encodeURIComponent(qr.t)}`;
+  return `${qr.tipo === 'sello' ? 'e' : 'd'}=${encodeURIComponent(qr.id)}&t=${encodeURIComponent(qr.t)}`;
 }
 
 async function procesar(qr) {
@@ -44,16 +44,11 @@ async function procesar(qr) {
       const resultado = await sellar(qr.id, qr.t);
       location.replace(`pasaporte.html?sello=${encodeURIComponent(qr.id)}&estado=${resultado}`);
     } else {
-      if (!perfil.mentor) await guardarMentor(qr.id).catch(console.error);
       const { estado, dia } = await registrarAsistencia(qr.id, qr.t);
-      location.replace(`pasaporte.html?asistencia=${dia.id}&mentor=${encodeURIComponent(qr.id)}&estado=${estado}`);
+      location.replace(`pasaporte.html?asistencia=${dia.id}&estado=${estado}`);
     }
   } catch (err) {
     console.error(err);
-    if (qr.tipo === 'mentor' && err.codigo === 'fecha') {
-      // Fuera de los días del evento: el registro queda hecho, la asistencia no.
-      return location.replace(`pasaporte.html?fuera=1&mentor=${encodeURIComponent(qr.id)}`);
-    }
     $('#titulo-error').textContent = qr.tipo === 'sello' ? 'No se pudo sellar' : 'No se pudo registrar la asistencia';
     $('#mensaje-error').textContent =
       err instanceof ErrorSello ? err.message : 'Ocurrió un error inesperado. Inténtalo de nuevo.';

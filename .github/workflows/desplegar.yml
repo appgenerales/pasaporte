@@ -1,5 +1,9 @@
 # Prueba, publica las reglas de Firestore y despliega el sitio en GitHub Pages.
-# En pull requests solo corre las pruebas.
+# Pages admite un solo sitio por repositorio: se publican las dos ramas juntas,
+#   main    -> https://<usuario>.github.io/pasaporte/
+#   sandbox -> https://<usuario>.github.io/pasaporte/sandbox/  (modo pruebas, js/evento.js)
+# Ambas usan el mismo proyecto de Firebase: las reglas que quedan publicadas son
+# las de la última rama que hizo push. En pull requests solo corre las pruebas.
 # Requisitos:
 #   - Settings > Pages > Source: "GitHub Actions".
 #   - Secreto FIREBASE_SERVICE_ACCOUNT (JSON de la cuenta de servicio) para
@@ -8,7 +12,7 @@ name: Desplegar
 
 on:
   push:
-    branches: [main]
+    branches: [main, sandbox]
   pull_request:
   workflow_dispatch:
 
@@ -53,7 +57,7 @@ jobs:
   reglas:
     name: Publicar reglas de Firestore
     needs: pruebas
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/sandbox')
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -82,7 +86,7 @@ jobs:
   sitio:
     name: Desplegar sitio
     needs: pruebas
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/sandbox')
     runs-on: ubuntu-24.04
     permissions:
       pages: write
@@ -92,15 +96,25 @@ jobs:
       url: ${{ steps.despliegue.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # trae las dos ramas
 
       # Solo lo que se sirve: sin PDFs de referencia, scripts ni pruebas.
-      - name: Armar el sitio
+      - name: Armar el sitio (main en la raíz, sandbox en /sandbox/)
         run: |
-          mkdir -p _sitio/tools
-          cp -r index.html pasaporte.html scanner.html admin.html constancia.html css js assets _sitio/
-          cp tools/generar-qrs.html _sitio/tools/
+          armar() {
+            mkdir -p "$2/tools"
+            (cd "$1" && cp -r index.html pasaporte.html scanner.html admin.html constancia.html css js assets "$2/")
+            cp "$1/tools/generar-qrs.html" "$2/tools/"
+          }
+          git worktree add "$RUNNER_TEMP/main" origin/main
+          armar "$RUNNER_TEMP/main" "$PWD/_sitio"
+          if git rev-parse --verify --quiet origin/sandbox >/dev/null; then
+            git worktree add "$RUNNER_TEMP/sandbox" origin/sandbox
+            armar "$RUNNER_TEMP/sandbox" "$PWD/_sitio/sandbox"
+          fi
           touch _sitio/.nojekyll
-          du -sh _sitio
+          du -sh _sitio _sitio/sandbox 2>/dev/null || true
 
       - uses: actions/configure-pages@v6
 

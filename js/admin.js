@@ -54,7 +54,7 @@ async function cargar() {
     });
     snapA.forEach((d) => {
       const a = d.data();
-      de(a.uid).asistencias[a.dia] = { ts: a.ts?.toMillis?.() ?? Date.now(), mentor: a.mentor || '' };
+      de(a.uid).asistencias[a.dia] = { ts: a.ts?.toMillis?.() ?? Date.now() };
     });
   }
 
@@ -90,7 +90,7 @@ function filtradas() {
     if (f === 'completos' && !r.completo) return false;
     if (f === 'incompletos' && r.completo) return false;
     const m = $('#filtro-mentor').value;
-    if (m && r.mentor !== m && !Object.values(r.asistencias).some((a) => a.mentor === m)) return false;
+    if (m && r.mentor !== m) return false;
     if (!q) return true;
     return [r.cedula, r.apellidos, r.nombres, r.programa, r.facultad, r.contacto, r.empresa, mentorPorId(r.mentor)?.nombre].join(' ').toLowerCase().includes(q);
   });
@@ -121,7 +121,7 @@ function pintar() {
         <td>${DIAS.map(
           (d, i) => {
             const a = r.asistencias[d.id];
-            const detalle = a ? ` · ${fecha(a.ts)} · ${mentorPorId(a.mentor)?.nombre || 'sin mentor'}` : '';
+            const detalle = a ? ` · ${fecha(a.ts)}` : '';
             return `<span class="chip ${a ? 'si dia' : ''}" title="${escapar(d.nombre + detalle)}">D${i + 1}</span>`;
           },
         ).join('')}</td>
@@ -184,10 +184,10 @@ async function abrirFicha(uid) {
 function exportarCSV() {
   const celda = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const cab = ['Cédula', 'Apellidos', 'Nombres', 'Correo', 'Programa', 'Facultad', 'Empresa', 'Mentor', 'Días',
-    ...DIAS.flatMap((d) => [`Asistencia ${d.nombre}`, `Mentor ${d.nombre}`]), 'Sellos', ...EMPRESAS.map((e) => e.nombre), 'Completo', 'Registro'];
+    ...DIAS.map((d) => `Asistencia ${d.nombre}`), 'Sellos', ...EMPRESAS.map((e) => e.nombre), 'Completo', 'Registro'];
   const lineas = filtradas().map((r) =>
     [r.cedula, r.apellidos, r.nombres, r.contacto, r.programa, r.facultad, r.empresa, mentorPorId(r.mentor)?.nombre || '', r.dias,
-      ...DIAS.flatMap((d) => [fecha(r.asistencias[d.id]?.ts), mentorPorId(r.asistencias[d.id]?.mentor)?.nombre || '']),
+      ...DIAS.map((d) => fecha(r.asistencias[d.id]?.ts)),
       r.n, ...EMPRESAS.map((e) => fecha(r.sellos[e.id])), r.completo ? 'Sí' : 'No', fecha(r.creadoEn)]
       .map(celda)
       .join(';'),

@@ -47,13 +47,13 @@
 
   <main class="contenedor">
     <section class="intro">
-      <p><b>Uso interno.</b> Cada QR lleva un token secreto. Cada mentor tiene su QR: el estudiante lo escanea con la cámara del celular; si no tiene pasaporte, se registra con ese mentor, y si ya lo tiene, queda su asistencia del día (del <span id="rango"></span>, hora de Colombia). Imprime también un QR por stand.</p>
+      <p><b>Uso interno.</b> Cada QR lleva un token secreto. Hay un QR de asistencia por día: el estudiante lo escanea con la cámara del celular; si no tiene pasaporte, se registra y queda marcado ese día. <span id="modo-fecha"></span> Imprime también un QR por stand.</p>
       <p>Si un QR se filtra (por ejemplo, alguien lo fotografía y lo comparte), pulsa <b>Rotar token</b>: el QR anterior deja de sellar y hay que reemplazar el impreso.</p>
       <p id="estado"></p>
       <button class="btn btn-claro oculto" id="entrar" type="button">Entrar con Google</button>
     </section>
-    <h2 class="titulo-seccion oculto" id="titulo-mentores">Mentores: registro el primer día y asistencia cada día</h2>
-    <section class="rejilla" id="rejilla-mentores"></section>
+    <h2 class="titulo-seccion oculto" id="titulo-dias">Asistencia: un QR por día</h2>
+    <section class="rejilla" id="rejilla-dias"></section>
     <h2 class="titulo-seccion oculto" id="titulo-empresas">Stands de las empresas</h2>
     <section class="rejilla" id="rejilla"></section>
   </main>
@@ -61,7 +61,8 @@
   <script type="module">
     import { DEMO, fb } from '../js/firebase.js';
     import { organizadorActual, entrarConGoogle } from '../js/admin-auth.js';
-    import { EMPRESAS, DIAS, MENTORES, ventanaDia, fechaLarga, etiquetaDestino } from '../js/empresas.js';
+    import { EMPRESAS, DIAS, ventanaDia, fechaLarga, etiquetaDestino } from '../js/empresas.js';
+    import { FECHA_ASISTENCIA_OBLIGATORIA } from '../js/evento.js';
 
     const $ = (s) => document.querySelector(s);
     const base = new URL('../scanner.html', location.href).href;
@@ -88,47 +89,41 @@
       return tokens;
     }
 
-    // dias/{id}: ventana del día en que cuenta la asistencia. Se crea o se
-    // actualiza si cambió la fecha en js/empresas.js.
-    async function asegurarDias() {
-      if (DEMO) return;
+    // dias/{id}: token del QR de asistencia y ventana en que sirve. Con la
+    // fecha obligatoria es el día exacto; si no (pruebas), todo el año del evento.
+    function ventana(d) {
+      if (FECHA_ASISTENCIA_OBLIGATORIA) return ventanaDia(d);
+      const anio = d.fecha.slice(0, 4);
+      return { inicio: new Date(`${anio}-01-01T00:00:00-05:00`), fin: new Date(`${Number(anio) + 1}-01-01T00:00:00-05:00`) };
+    }
+
+    async function leerTokensDias() {
+      if (DEMO) return Object.fromEntries(DIAS.map((d) => [d.id, `demo-${d.id}`]));
       const { db, F } = await fb();
+      const tokens = {};
       for (const d of DIAS) {
         const ref = F.doc(db, 'dias', d.id);
         const snap = await F.getDoc(ref);
-        const { inicio, fin } = ventanaDia(d);
+        const { inicio, fin } = ventana(d);
         const previo = snap.exists() ? snap.data() : {};
-        if (previo.inicio?.toMillis() !== inicio.getTime() || previo.fin?.toMillis() !== fin.getTime()) {
-          await F.setDoc(ref, { nombre: d.nombre, fecha: d.fecha, inicio: F.Timestamp.fromDate(inicio), fin: F.Timestamp.fromDate(fin) });
-        }
-      }
-    }
-
-    // mentores/{id}: token secreto del QR de cada mentor.
-    async function leerTokensMentores() {
-      if (DEMO) return Object.fromEntries(MENTORES.map((m) => [m.id, `demo-${m.id}`]));
-      const { db, F } = await fb();
-      const tokens = {};
-      for (const m of MENTORES) {
-        const ref = F.doc(db, 'mentores', m.id);
-        const snap = await F.getDoc(ref);
-        if (snap.exists() && snap.data().token) {
-          tokens[m.id] = snap.data().token;
-        } else {
-          tokens[m.id] = tokenNuevo();
-          await F.setDoc(ref, { nombre: m.nombre, token: tokens[m.id] });
+        tokens[d.id] = previo.token || tokenNuevo();
+        if (!previo.token || previo.inicio?.toMillis() !== inicio.getTime() || previo.fin?.toMillis() !== fin.getTime()) {
+          await F.setDoc(ref, {
+            nombre: d.nombre, fecha: d.fecha, token: tokens[d.id],
+            inicio: F.Timestamp.fromDate(inicio), fin: F.Timestamp.fromDate(fin),
+          });
         }
       }
       return tokens;
     }
 
-    async function rotarMentor(m) {
+    async function rotarDia(d) {
       if (DEMO) return alert('En modo demo los tokens son fijos.');
-      if (!confirm(`¿Rotar el token de ${m.nombre}? Su QR impreso actual dejará de funcionar.`)) return;
+      if (!confirm(`¿Rotar el token de asistencia del ${d.nombre}? El QR impreso actual dejará de funcionar.`)) return;
       const { db, F } = await fb();
       const token = tokenNuevo();
-      await F.setDoc(F.doc(db, 'mentores', m.id), { nombre: m.nombre, token });
-      pintarTarjeta(tarjetaMentor(m), token, '#rejilla-mentores');
+      await F.updateDoc(F.doc(db, 'dias', d.id), { token });
+      pintarTarjeta(tarjetaDia(d), token, '#rejilla-dias');
     }
 
     async function rotar(e) {
@@ -145,10 +140,10 @@
       img: `../assets/sellos/${e.id}.webp`, archivo: `qr-${e.destino ? `destino-${e.destino}` : 'stand'}-${e.id}`,
       instruccion: 'Escanea para sellar tu pasaporte', rotar: () => rotar(e),
     });
-    const tarjetaMentor = (m) => ({
-      id: m.id, param: 'm', titulo: 'MENTOR', subtitulo: m.nombre,
-      img: null, archivo: `qr-mentor-${m.id}`,
-      instruccion: 'Escanea para registrarte y marcar tu asistencia', rotar: () => rotarMentor(m),
+    const tarjetaDia = (d) => ({
+      id: d.id, param: 'd', titulo: 'ASISTENCIA', subtitulo: `${d.nombre} · ${fechaLarga(d.fecha)}`,
+      img: null, archivo: `qr-asistencia-${d.id}`,
+      instruccion: 'Escanea para registrar tu asistencia', rotar: () => rotarDia(d),
     });
 
     function pintarTarjeta(e, token, rejilla) {
@@ -193,12 +188,12 @@
           $('#entrar').classList.remove('oculto');
           return;
         }
-        const [tokens, tokensMentores] = await Promise.all([leerTokens(), leerTokensMentores(), asegurarDias()]);
+        const [tokens, tokensDias] = await Promise.all([leerTokens(), leerTokensDias()]);
         if (!DEMO) $('#estado').textContent = `Sesión: ${correo}`;
         $('#entrar').classList.add('oculto');
-        $('#titulo-mentores').classList.remove('oculto');
+        $('#titulo-dias').classList.remove('oculto');
         $('#titulo-empresas').classList.remove('oculto');
-        MENTORES.forEach((m) => pintarTarjeta(tarjetaMentor(m), tokensMentores[m.id], '#rejilla-mentores'));
+        DIAS.forEach((d) => pintarTarjeta(tarjetaDia(d), tokensDias[d.id], '#rejilla-dias'));
         EMPRESAS.forEach((e) => pintarTarjeta(tarjetaEmpresa(e), tokens[e.id], '#rejilla'));
       } catch (err) {
         console.error(err);
@@ -215,7 +210,9 @@
       }
     };
     $('#imprimir').onclick = () => print();
-    $('#rango').textContent = `${fechaLarga(DIAS[0].fecha)} al ${fechaLarga(DIAS[DIAS.length - 1].fecha)}`;
+    $('#modo-fecha').innerHTML = FECHA_ASISTENCIA_OBLIGATORIA
+      ? `Cada QR solo sirve en su fecha (del ${fechaLarga(DIAS[0].fecha)} al ${fechaLarga(DIAS[DIAS.length - 1].fecha)}, hora de Colombia).`
+      : '<b>Modo pruebas:</b> los QR de asistencia sirven en cualquier fecha (activa <code>FECHA_ASISTENCIA_OBLIGATORIA</code> en <code>js/evento.js</code> y vuelve a abrir esta página antes del evento).';
     window.addEventListener('load', iniciar);
   </script>
 </body>

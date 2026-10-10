@@ -1,6 +1,6 @@
 # Pasaporte CUEE 2.0
 
-Pasaporte digital de las Pasantías CUEE 2.0 (ITM). Cada mentor tiene su QR. El primer día el estudiante lo escanea con la cámara del celular y se registra (cédula, nombres, apellidos, correo, programa, facultad y una contraseña que él mismo crea); los días siguientes escanea el QR de su mentor y queda su asistencia del día con ese mentor. Abre su pasaporte, lo hojea como un libro y, al terminar la charla de cada empresa, escanea el QR del stand para que su hoja quede sellada. Con los 3 días y los 8 sellos completa el CUEE 2.0.
+Pasaporte digital de las Pasantías CUEE 2.0 (ITM). Hay un QR de asistencia por día. El primer día el estudiante lo escanea con la cámara del celular y se registra (cédula, nombres, apellidos, correo, facultad, programa, mentor y una contraseña que él mismo crea); los días siguientes escanea el QR de ese día. Desde el viernes 16 de octubre abre su pasaporte, lo hojea como un libro y, al terminar la charla de cada stand, escanea su QR para sellar la hoja. Antes de esa fecha ve una antesala con la portada cerrada y su asistencia. Con los 3 días y los 8 sellos completa el CUEE 2.0.
 
 - Diseño: las hojas son el boceto de Canva (`imagenes_referencia/Pasaporte CUEE 2.0.pdf`, páginas 1 a 6) y los sellos son las páginas 7 a 14.
 - Especificación: `.remember/cue-pasaporte-spec.md`. Arquitectura: `imagenes_referencia/cue-pasaporte-arquitectura.drawio`.
@@ -12,10 +12,10 @@ Pasaporte digital de las Pasantías CUEE 2.0 (ITM). Cada mentor tiene su QR. El 
 |---|---|---|
 | `index.html` | Estudiante | "Soy nuevo": autorización de tratamiento de datos (Ley 1581 de 2012), registro con facultad y programa en listas (desde `imagenes_referencia/Facultades-Programas.xlsx`), empresa opcional, mentor y contraseña. "Ya tengo pasaporte": entrar con correo y contraseña desde cualquier celular, y recuperar la contraseña por correo. |
 | `pasaporte.html` | Estudiante | El libro: portada, hoja de datos, 8 destinos, misión cumplida y contraportada. Se pasa la hoja deslizando, con las flechas o con el teclado. |
-| `scanner.html` | Estudiante | Escáner de QR de stands (`?e=`) y de mentores (`?m=`, registro y asistencia). También funciona si el QR se abre con la cámara normal del celular. |
+| `scanner.html` | Estudiante | Escáner de QR de asistencia (`?d=dia1`, registro el primer día) y de stands (`?e=`). También funciona si el QR se abre con la cámara normal del celular. |
 | `constancia.html` | Estudiante | Con los 3 días y los 8 sellos, genera la constancia de abordaje y participación (plantilla de Canva, página 1) con su nombre y cédula, y la descarga en PDF o imagen. |
 | `admin.html` | Organizadores | Entrada con correo y contraseña (o Google). Tabla con asistencia por día y sellos, ficha con foto y firma, exportación CSV, sorteo entre los completos (3 días + todos los sellos), constancia manual para estudiantes con 2 días o más, y constancias de mentores en PDF. |
-| `tools/generar-qrs.html` | Organizadores | Crea los tokens secretos y la ventana de cada día, y muestra los QR para imprimir: 11 de mentores y 8 de stands. Permite rotarlos. |
+| `tools/generar-qrs.html` | Organizadores | Crea los tokens secretos y la ventana de cada día, y muestra los QR para imprimir: 3 de asistencia (uno por día) y 9 de stands. Permite rotarlos. |
 
 En la hoja de datos el estudiante toca la foto para tomarse una, la firma para firmar con el dedo y los campos para corregirlos. En cada destino puede escribir "Lo más importante que descubrí" sobre las líneas del boceto.
 
@@ -43,7 +43,10 @@ La cámara del escáner necesita HTTPS (o `localhost`).
 
 ## El día del evento
 
-- Cada mentor lleva su QR. Si el estudiante no tiene pasaporte, el QR abre el registro con ese mentor; si ya lo tiene (o entra con su correo y contraseña), marca la asistencia del día en curso con ese mentor. Solo cuenta del 14 al 16 de octubre (hora de Colombia, `DIAS` en `js/empresas.js`); si cambian las fechas, edítalas y abre `tools/generar-qrs.html`. Los mentores están en `MENTORES` del mismo archivo.
+- Cada día se muestra su QR de asistencia. Si el estudiante no tiene pasaporte, el QR abre el registro y al terminar queda marcado ese día; si ya lo tiene, marca el día. Las fechas están en `DIAS` de `js/empresas.js` y los mentores (que el estudiante elige al registrarse) en `MENTORES`.
+- Interruptores en `js/evento.js`:
+  - `FECHA_ASISTENCIA_OBLIGATORIA` (hoy `false`, para pruebas): con `true` cada QR solo sirve en su fecha. Tras cambiarlo, abre `tools/generar-qrs.html` para que Firestore tome la ventana de cada día.
+  - `PASAPORTE_VISIBLE_DESDE` (`2026-10-16`): antes de esa fecha el pasaporte muestra la antesala y los stands no sellan. En sandbox y en local se ve siempre.
 - El estudiante puede cerrar sesión (botón de la cabecera) y volver a entrar en cualquier celular con su correo y contraseña. Las contraseñas las guarda cifradas Firebase Authentication; nadie del equipo las ve.
 - Cada stand muestra su QR impreso. El estudiante lo escanea con "Escanear QR" o con la cámara del celular.
 - Al completar los 8 sellos (y al completar todo) el pasaporte lanza confeti.
@@ -56,8 +59,8 @@ La cámara del escáner necesita HTTPS (o `localhost`).
 ## Datos
 
 - `estudiantes/{uid}`: cédula, nombres, apellidos, programa, facultad, empresa (opcional), contacto (correo), notas por destino, fecha de registro. A quien se registró antes de pedir cédula y facultad, el pasaporte se las pide al abrirlo.
-- `asistencias/{uid}_{dia}`: uid, dia, mentor, token, ts. `mentores/{id}`: token del QR; `dias/{dia}`: inicio y fin. Ambos solo para organizadores; las reglas exigen el token del mentor y que la hora del servidor esté dentro del día.
-- `estudiantes/{uid}.mentor`: mentor con el que se registró.
+- `asistencias/{uid}_{dia}`: uid, dia, token, ts. `dias/{dia}`: token del QR, inicio y fin (solo organizadores); las reglas exigen el token del día y que la hora del servidor esté en esa ventana.
+- `estudiantes/{uid}.mentor`: mentor acompañante elegido en el registro.
 - `sellos/{uid}_{empresaId}`: uid, empresaId, token, ts. El ID compuesto impide sellos repetidos.
 - `empresas/{empresaId}`: nombre, orden, token (solo organizadores).
 - `fotos/{uid}`: foto (JPEG 360×480) y firma (PNG 600×200) como data URL. Va aparte del perfil para que la tabla de `admin.html` no descargue imágenes; se ve con el botón *Ver* de cada estudiante. Al abrir el pasaporte se sincronizan: si el estudiante cambia de celular se recuperan, y si estaban solo en el celular se suben.
@@ -68,8 +71,10 @@ Cambios respecto a la especificación: el catálogo de empresas vive en `js/empr
 
 | Workflow | Cuándo | Qué hace |
 |---|---|---|
-| `desplegar.yml` | Cada push a `main` (y a mano) | Revisa la sintaxis del JavaScript, corre las pruebas de `firestore.rules` en el emulador (`pruebas/reglas.test.mjs`), publica las reglas en Firebase y despliega el sitio en GitHub Pages. En pull requests solo corre las pruebas. |
+| `desplegar.yml` | Cada push a `main` o `sandbox` (y a mano) | Revisa la sintaxis del JavaScript, corre las pruebas de `firestore.rules` en el emulador (`pruebas/reglas.test.mjs`), publica las reglas en Firebase y despliega el sitio en GitHub Pages: `main` en la raíz y `sandbox` en `/sandbox/` (modo pruebas). En pull requests solo corre las pruebas. |
 | `limpiar-datos.yml` | A mano: *Actions > Limpiar datos de prueba > Run workflow* | Borra estudiantes, sellos, asistencias, fotos y (opcional) las cuentas de los estudiantes. Conserva tokens de stands y mentores, fechas y cuentas de organizadores. Pide escribir `BORRAR`; con *simular* solo cuenta. |
+
+Las dos ramas comparten el proyecto de Firebase (mismos datos y mismas reglas): quedan publicadas las reglas de la última rama que hizo push. Para borrar los datos de prueba usa `limpiar-datos.yml`.
 
 **Configuración (una sola vez):**
 
