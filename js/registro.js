@@ -1,11 +1,11 @@
 import { leerPerfil, registrar, iniciarSesion, recuperarContrasena, pendiente, ErrorCuenta, correoSesion } from './auth.js';
-import { MENTORES, mentorPorId } from './empresas.js';
+import { MENTORES, diaPorId } from './empresas.js';
 import { conectarFacultadPrograma, llenarEmpresas } from './formularios.js';
 
 const $ = (sel) => document.querySelector(sel);
 
 function continuar() {
-  // Si llegó escaneando un QR (stand o mentor) antes de entrar, se aplica ahora.
+  // Si llegó escaneando un QR (asistencia o stand) antes de entrar, se aplica ahora.
   const p = pendiente.leer();
   if (p) {
     pendiente.borrar();
@@ -29,16 +29,13 @@ function error(form, texto) {
   form.querySelector('.mensaje-error').textContent = texto;
 }
 
-// Llegó con el QR de un mentor: se fija el mentor en el registro.
-function prepararMentor() {
+// Llegó con el QR de asistencia de un día: se le cuenta al terminar el registro.
+function prepararAviso() {
   const q = new URLSearchParams(pendiente.leer() || '');
-  const mentor = mentorPorId(q.get('m'));
-  if (!mentor) return;
-  const select = $('#mentor');
-  select.value = mentor.id;
-  select.disabled = true;
-  $('#aviso-mentor').innerHTML = `Llegaste con el QR de tu mentor <b>${mentor.nombre}</b>. Si es tu primera vez, regístrate; si ya tienes pasaporte, entra con tu correo.`;
-  $('#aviso-mentor').classList.remove('oculto');
+  const dia = diaPorId(q.get('d'));
+  if (!dia) return;
+  $('#aviso-qr').innerHTML = `Escaneaste el QR de asistencia del <b>${dia.nombre}</b>. Si es tu primera vez, regístrate y quedará marcada; si ya tienes pasaporte, entra con tu correo.`;
+  $('#aviso-qr').classList.remove('oculto');
 }
 
 // La cuenta existe pero le falta el pasaporte: se lleva a "Soy nuevo" con
@@ -72,7 +69,6 @@ $('#form-registro').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const form = ev.currentTarget;
   const datos = Object.fromEntries(new FormData(form));
-  datos.mentor = $('#mentor').value; // un select deshabilitado no viaja en FormData
   error(form, '');
 
   if (datos.autoriza !== 'si') {
@@ -167,7 +163,7 @@ for (const b of document.querySelectorAll('.pestana')) {
 conectarFacultadPrograma($('#facultad'), $('#programa'));
 llenarEmpresas($('#empresa'));
 $('#mentor').insertAdjacentHTML('beforeend', MENTORES.map((m) => `<option value="${m.id}">${m.nombre}</option>`).join(''));
-prepararMentor();
+prepararAviso();
 if (new URLSearchParams(location.search).get('entrar') !== null) mostrarVista('form-entrar');
 
 iniciar();

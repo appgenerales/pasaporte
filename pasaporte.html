@@ -46,7 +46,22 @@
       <div id="libro-marco"><div id="libro" class="cargando"></div></div>
     </div>
 
-    <nav class="navegacion" aria-label="Pasar hojas">
+    <section id="antesala" class="antesala oculto" aria-live="polite">
+      <div class="antesala-portada">
+        <img src="assets/paginas/00-portada.webp" alt="Portada del pasaporte">
+        <span class="candado" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </span>
+      </div>
+      <div class="antesala-texto">
+        <h1>Tu pasaporte se abre el <span id="antesala-fecha"></span></h1>
+        <p>Ese día lo hojeas y lo sellas en cada stand. Mientras tanto, registra tu asistencia escaneando el QR de cada día.</p>
+        <ul id="antesala-dias" class="antesala-dias"></ul>
+        <button class="btn btn-secundario" id="antesala-datos" type="button">Mis datos</button>
+      </div>
+    </section>
+
+    <nav class="navegacion" id="navegacion" aria-label="Pasar hojas">
       <button class="btn btn-secundario btn-icono" id="anterior" aria-label="Hoja anterior">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>

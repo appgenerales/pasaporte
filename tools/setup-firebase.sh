@@ -99,28 +99,23 @@ service cloud.firestore {
       allow delete: if esAdmin();
     }
 
-    // Ventana (inicio, fin) de cada día del evento.
+    // QR de asistencia de cada día: token secreto y ventana (inicio, fin) en
+    // que sirve. En pruebas la ventana cubre todo el evento (js/evento.js).
     match /dias/{id} {
       allow read, write: if esAdmin();
     }
 
-    // Token secreto del QR de cada mentor.
-    match /mentores/{id} {
-      allow read, write: if esAdmin();
-    }
-
-    // Un documento por estudiante y día: {uid}_{diaId}. Se marca con el QR
-    // de un mentor y solo durante ese día (hora del servidor).
+    // Un documento por estudiante y día: {uid}_{diaId}. Exige el token del QR
+    // del día y que la hora del servidor esté dentro de su ventana.
     match /asistencias/{aid} {
       function diaVigente(d) {
         let dia = get(/databases/$(database)/documents/dias/$(d.dia)).data;
-        let mentor = get(/databases/$(database)/documents/mentores/$(d.mentor)).data;
-        return d.token == mentor.token && request.time >= dia.inicio && request.time < dia.fin;
+        return d.token == dia.token && request.time >= dia.inicio && request.time < dia.fin;
       }
       allow get: if esAdmin() || (request.auth != null && aid.matches(request.auth.uid + '_.+'));
       allow list: if esAdmin() || (request.auth != null && resource.data.uid == request.auth.uid);
       allow create: if request.auth != null
-        && request.resource.data.keys().hasOnly(['uid', 'dia', 'mentor', 'token', 'ts'])
+        && request.resource.data.keys().hasOnly(['uid', 'dia', 'token', 'ts'])
         && request.resource.data.uid == request.auth.uid
         && aid == request.auth.uid + '_' + request.resource.data.dia
         && request.resource.data.ts == request.time

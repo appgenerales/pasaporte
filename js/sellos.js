@@ -1,6 +1,7 @@
 import { DEMO, fb, local } from './firebase.js';
 import { usuarioActual } from './auth.js';
-import { empresaPorId, mentorPorId, diaDeHoy, DIAS, fechaLarga } from './empresas.js';
+import { empresaPorId, diaPorId, diaDeHoy, fechaLarga } from './empresas.js';
+import { FECHA_ASISTENCIA_OBLIGATORIA, PASAPORTE_VISIBLE_DESDE, pasaporteVisible } from './evento.js';
 
 // En modo demo cada cuenta guarda lo suyo aparte.
 const demo = (k) => `${k}.${local.get('cue.demo.uid')}`;
@@ -24,6 +25,9 @@ export async function sellar(empresaId, token) {
   }
   const uid = await usuarioActual();
   if (!uid) throw new ErrorSello('sesion', 'Primero debes registrarte.');
+  if (!pasaporteVisible()) {
+    throw new ErrorSello('fecha', `Los stands sellan el pasaporte desde el ${fechaLarga(PASAPORTE_VISIBLE_DESDE)}.`);
+  }
 
   if (DEMO) {
     if (token !== `demo-${empresaId}`) {
@@ -74,42 +78,38 @@ export async function misSellos() {
 }
 
 // ---------- Asistencia a los días del evento ----------
-// Se marca con el QR de un mentor: asistencias/{uid}_{dia} guarda el día en
-// curso y el mentor. Las reglas exigen el token del mentor y que la hora del
-// servidor esté dentro del día (dias/{dia}.inicio … fin).
+// Cada día tiene su QR: asistencias/{uid}_{dia}. Las reglas exigen el token
+// del día y que la hora del servidor esté en dias/{dia}.inicio … fin (en
+// pruebas esa ventana cubre todo el evento; ver js/evento.js).
 // Devuelve { estado: 'nuevo' | 'repetido', dia }.
-export async function registrarAsistencia(mentorId, token) {
-  const mentor = mentorPorId(mentorId);
-  if (!mentor || !token) {
+export async function registrarAsistencia(diaId, token) {
+  const dia = diaPorId(diaId);
+  if (!dia || !token) {
     throw new ErrorSello('qr', 'Este código QR no pertenece al CUEE 2.0.');
   }
   const uid = await usuarioActual();
   if (!uid) throw new ErrorSello('sesion', 'Primero debes registrarte.');
+  if (FECHA_ASISTENCIA_OBLIGATORIA && diaDeHoy()?.id !== dia.id) {
+    throw new ErrorSello('fecha', `El QR del ${dia.nombre} solo registra asistencia el ${fechaLarga(dia.fecha)}.`);
+  }
 
-  let dia = diaDeHoy();
   if (DEMO) {
-    if (token !== `demo-${mentorId}`) throw new ErrorSello('token', 'El código del mentor no es válido.');
+    if (token !== `demo-${diaId}`) throw new ErrorSello('token', 'El código de asistencia no es válido.');
     const asis = local.get(demo(K_DEMO_ASIS), {});
-    // En la demo, fuera de las fechas se usa el primer día pendiente para poder probar.
-    dia = dia || DIAS.find((d) => !asis[d.id]) || DIAS[DIAS.length - 1];
     if (asis[dia.id]) return { estado: 'repetido', dia };
-    asis[dia.id] = { ts: Date.now(), mentor: mentorId };
+    asis[dia.id] = { ts: Date.now() };
     local.set(demo(K_DEMO_ASIS), asis);
     return { estado: 'nuevo', dia };
   }
 
-  if (!dia) {
-    const [primero, ultimo] = [DIAS[0], DIAS[DIAS.length - 1]];
-    throw new ErrorSello('fecha', `La asistencia se registra del ${fechaLarga(primero.fecha)} al ${fechaLarga(ultimo.fecha)}.`);
-  }
   const { db, F } = await fb();
   const ref = F.doc(db, 'asistencias', `${uid}_${dia.id}`);
   if ((await F.getDoc(ref)).exists()) return { estado: 'repetido', dia };
   try {
-    await F.setDoc(ref, { uid, dia: dia.id, mentor: mentorId, token, ts: F.serverTimestamp() });
+    await F.setDoc(ref, { uid, dia: dia.id, token, ts: F.serverTimestamp() });
   } catch (err) {
     if (err.code === 'permission-denied') {
-      throw new ErrorSello('token', 'El código del mentor no es válido. Pide a tu mentor el QR vigente.');
+      throw new ErrorSello('token', 'El código de asistencia no es válido o no corresponde a hoy. Pide a la organización el QR vigente.');
     }
     throw new ErrorSello('red', 'No pudimos registrar tu asistencia. Revisa tu conexión e inténtalo de nuevo.');
   }

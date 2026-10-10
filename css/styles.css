@@ -519,6 +519,105 @@ a {
   pointer-events: none;
 }
 
+/* ---------- Antesala (antes de que se abra el pasaporte) ---------- */
+.antesala {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 860px;
+  padding: 8px 20px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+}
+.antesala-portada {
+  position: relative;
+  width: min(46vw, 210px);
+  flex: none;
+}
+.antesala-portada img {
+  width: 100%;
+  display: block;
+  border-radius: 4px 12px 12px 4px;
+  box-shadow: var(--sombra);
+  filter: saturate(0.85);
+}
+.candado {
+  position: absolute;
+  right: -12px;
+  bottom: -12px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--lima);
+  color: var(--azul-hondo);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+.candado svg {
+  width: 26px;
+  height: 26px;
+}
+.antesala-texto h1 {
+  font-size: 21px;
+  margin: 0 0 6px;
+  line-height: 1.25;
+}
+.antesala-texto h1 span {
+  color: var(--lima);
+}
+.antesala-texto p {
+  margin: 0 0 14px;
+  opacity: 0.88;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.antesala-dias {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto 14px;
+  display: grid;
+  gap: 8px;
+  max-width: 380px;
+  text-align: left;
+}
+.antesala-dias li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 14px;
+  font-weight: 600;
+}
+.antesala-dias li b {
+  font-weight: 700;
+  opacity: 0.7;
+}
+.antesala-dias li.si b {
+  color: var(--lima);
+  opacity: 1;
+}
+@media (min-width: 760px) {
+  .antesala {
+    flex-direction: row;
+    justify-content: center;
+    gap: 40px;
+    text-align: left;
+  }
+  .antesala-portada {
+    width: 240px;
+  }
+  .antesala-dias {
+    margin-left: 0;
+  }
+}
+
 /* ---------- Navegación bajo el libro ---------- */
 .navegacion {
   display: flex;
@@ -839,7 +938,7 @@ dialog::backdrop {
   color: var(--azul);
   box-shadow: 0 2px 8px rgba(16, 45, 106, 0.15);
 }
-.aviso-mentor {
+.aviso-qr {
   background: var(--azul);
   color: #fff;
   border-radius: 14px;
@@ -847,7 +946,7 @@ dialog::backdrop {
   font-size: 14px;
   margin-bottom: 16px;
 }
-.aviso-mentor b {
+.aviso-qr b {
   color: var(--lima);
 }
 .enlace {

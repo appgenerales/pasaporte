@@ -28,9 +28,8 @@ await env.withSecurityRulesDisabled(async (c) => {
   const db = c.firestore();
   await setDoc(doc(db, 'empresas/epm'), { token: 'T-EPM' });
   await setDoc(doc(db, 'empresas/viajemos'), { token: 'T-VJ' });
-  await setDoc(doc(db, 'mentores/german-cano'), { token: 'T-M1' });
-  await setDoc(doc(db, 'dias/dia1'), { inicio: Timestamp.fromMillis(Date.now() - hora), fin: Timestamp.fromMillis(Date.now() + hora) });
-  await setDoc(doc(db, 'dias/dia2'), { inicio: Timestamp.fromMillis(Date.now() + 20 * hora), fin: Timestamp.fromMillis(Date.now() + 44 * hora) });
+  await setDoc(doc(db, 'dias/dia1'), { token: 'T-D1', inicio: Timestamp.fromMillis(Date.now() - hora), fin: Timestamp.fromMillis(Date.now() + hora) });
+  await setDoc(doc(db, 'dias/dia2'), { token: 'T-D2', inicio: Timestamp.fromMillis(Date.now() + 20 * hora), fin: Timestamp.fromMillis(Date.now() + 44 * hora) });
   // Estudiante registrado antes de pedir cédula y facultad.
   await setDoc(doc(db, 'estudiantes/viejo'), { nombres: 'M', apellidos: 'M', nombre: 'M M', programa: 'P', empresa: '', contacto: 'a@b.co', notas: {}, creadoEn: Timestamp.now() });
 });
@@ -48,7 +47,7 @@ const perfil = {
   facultad: 'Facultad de Ingenierías', empresa: '', contacto: 'ana@x.co', mentor: 'german-cano',
   autorizaDatos: true, notas: {}, creadoEn: serverTimestamp(),
 };
-const asistencia = (uid, dia, token = 'T-M1', mentor = 'german-cano') => ({ uid, dia, mentor, token, ts: serverTimestamp() });
+const asistencia = (uid, dia, token = { dia1: 'T-D1', dia2: 'T-D2' }[dia]) => ({ uid, dia, token, ts: serverTimestamp() });
 
 // Estudiantes
 await prueba('registro completo', assertSucceeds(setDoc(doc(ana, 'estudiantes/ana'), perfil)));
@@ -68,11 +67,13 @@ await prueba('asistencia del día vigente', assertSucceeds(setDoc(doc(ana, 'asis
 await prueba('asistencia repetida rechazada', assertFails(setDoc(doc(ana, 'asistencias/ana_dia1'), asistencia('ana', 'dia1'))));
 await prueba('asistencia de otro día rechazada', assertFails(setDoc(doc(ana, 'asistencias/ana_dia2'), asistencia('ana', 'dia2'))));
 await prueba('asistencia con token malo rechazada', assertFails(setDoc(doc(viejo, 'asistencias/viejo_dia1'), asistencia('viejo', 'dia1', 'X'))));
-await prueba('asistencia con mentor inexistente rechazada', assertFails(setDoc(doc(viejo, 'asistencias/viejo_dia1'), asistencia('viejo', 'dia1', 'T-M1', 'nadie'))));
+await prueba('asistencia con el token de otro día rechazada', assertFails(setDoc(doc(viejo, 'asistencias/viejo_dia1'), asistencia('viejo', 'dia1', 'T-D2'))));
+await prueba('asistencia de un día inexistente rechazada', assertFails(setDoc(doc(viejo, 'asistencias/viejo_dia9'), asistencia('viejo', 'dia9', 'T-D1'))));
+await prueba('asistencia con campos extra rechazada', assertFails(setDoc(doc(viejo, 'asistencias/viejo_dia1'), { ...asistencia('viejo', 'dia1'), mentor: 'x' })));
+await prueba('viejo marca asistencia con el QR del día', assertSucceeds(setDoc(doc(viejo, 'asistencias/viejo_dia1'), asistencia('viejo', 'dia1'))));
 await prueba('asistencia sin registro rechazada', assertFails(setDoc(doc(otro, 'asistencias/otro_dia1'), asistencia('otro', 'dia1'))));
 await prueba('lista de mis asistencias', assertSucceeds(getDocs(query(collection(ana, 'asistencias'), where('uid', '==', 'ana')))));
-await prueba('estudiante no lee ventanas de días', assertFails(getDoc(doc(ana, 'dias/dia1'))));
-await prueba('estudiante no lee tokens de mentores', assertFails(getDoc(doc(ana, 'mentores/german-cano'))));
+await prueba('estudiante no lee tokens de días', assertFails(getDoc(doc(ana, 'dias/dia1'))));
 await prueba('estudiante no lee tokens de stands', assertFails(getDoc(doc(ana, 'empresas/epm'))));
 // Foto y firma
 await prueba('foto propia', assertSucceeds(setDoc(doc(ana, 'fotos/ana'), { foto: 'data:image/jpeg;base64,AAA', actualizado: serverTimestamp() }, { merge: true })));
@@ -84,7 +85,7 @@ await prueba('admin de Google lee todo', assertSucceeds(Promise.all([
   getDocs(collection(adminGoogle, 'sellos')), getDoc(doc(adminGoogle, 'fotos/ana')), getDoc(doc(adminGoogle, 'dias/dia1')),
 ])));
 await prueba('admin por UID lee estudiantes', assertSucceeds(getDocs(collection(adminUid, 'estudiantes'))));
-await prueba('admin escribe tokens', assertSucceeds(setDoc(doc(adminUid, 'mentores/nuevo'), { token: 'T' })));
+await prueba('admin escribe tokens', assertSucceeds(setDoc(doc(adminUid, 'dias/dia3'), { token: 'T' })));
 await prueba('correo de admin sin verificar no es admin', assertFails(getDocs(collection(correoAdminSinVerificar, 'estudiantes'))));
 await prueba('mismo correo con otro UID no es admin', assertFails(getDocs(collection(impostor, 'estudiantes'))));
 

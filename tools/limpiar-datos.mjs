@@ -2,7 +2,7 @@
 //
 // Borra: estudiantes, sellos, asistencias, fotos y (opcional) las cuentas de
 // Firebase Authentication de los estudiantes.
-// Conserva: empresas y mentores (tokens de los QR impresos), dias y las
+// Conserva: empresas y dias (tokens de los QR impresos y ventanas) y las
 // cuentas de los organizadores (ADMINS de js/firebase-config.js y los UID
 // de esAdmin() en firestore.rules).
 //

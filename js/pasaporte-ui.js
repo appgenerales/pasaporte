@@ -3,6 +3,7 @@ import { misSellos, misAsistencias } from './sellos.js';
 import { EMPRESAS, TOTAL, PAGINAS, PAGINA_DATOS, PAGINA_MISION, DIAS, empresaPorId, diaPorId, mentorPorId, rutaSello, fechaLarga, etiquetaDestino } from './empresas.js';
 import { conectarFacultadPrograma, llenarEmpresas } from './formularios.js';
 import { fiesta } from './fiesta.js';
+import { pasaporteVisible, PASAPORTE_VISIBLE_DESDE } from './evento.js';
 
 const $ = (sel) => document.querySelector(sel);
 const RATIO = 1100 / 1700; // proporción de cada hoja del boceto
@@ -412,30 +413,22 @@ $('#firma-guardar').addEventListener('click', async () => {
 });
 
 // ---------- arranque ----------
-async function iniciar() {
-  estado.uid = await usuarioActual();
-  if (!estado.uid) return location.replace('index.html');
+// Antes de PASAPORTE_VISIBLE_DESDE: portada cerrada y asistencia de los días.
+function mostrarAntesala() {
+  $('#libro-zona').classList.add('oculto');
+  $('#navegacion').classList.add('oculto');
+  $('#antesala').classList.remove('oculto');
+  const semana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const diaSemana = semana[new Date(`${PASAPORTE_VISIBLE_DESDE}T12:00:00-05:00`).getUTCDay()];
+  $('#antesala-fecha').textContent = `${diaSemana} ${fechaLarga(PASAPORTE_VISIBLE_DESDE)}`;
+  $('#antesala-dias').innerHTML = DIAS.map((d) => {
+    const ok = estado.asistencias[d.id];
+    return `<li class="${ok ? 'si' : ''}"><span>${d.nombre} · ${fechaLarga(d.fecha)}</span><b>${ok ? '✓ Asististe' : 'Pendiente'}</b></li>`;
+  }).join('');
+}
 
-  const [perfil, sellos, asistencias] = await Promise.all([leerPerfil(), misSellos(), misAsistencias()]);
-  if (!perfil) return location.replace('index.html');
-  estado.perfil = perfil;
-  estado.sellos = sellos;
-  estado.asistencias = asistencias;
-
-  const params = new URLSearchParams(location.search);
-  const nuevo = empresaPorId(params.get('sello'));
-  const nuevoDia = diaPorId(params.get('asistencia'));
-  const repetido = params.get('estado') === 'repetido';
-  if (params.has('sello') || params.has('asistencia') || params.has('fuera')) history.replaceState(null, '', location.pathname);
-  if (nuevo && !repetido) estado.ocultar = nuevo.id;
-
+function abrirLibro(nuevo, repetido) {
   construir();
-  pintarProgreso();
-  pintarConstancia();
-  sincronizarImagenes().then((cambio) => cambio && pintarDatos());
-
-  $('#cargando').classList.add('oculto');
-  $('#escena').classList.remove('oculto');
   medir();
   window.addEventListener('resize', medir);
 
@@ -492,24 +485,46 @@ async function iniciar() {
   } else if (nuevo && repetido) {
     aviso(`Ya tenías el sello de ${nuevo.nombre}.`);
   }
+}
 
-  const mentor = mentorPorId(params.get('mentor'));
+async function iniciar() {
+  estado.uid = await usuarioActual();
+  if (!estado.uid) return location.replace('index.html');
+
+  const [perfil, sellos, asistencias] = await Promise.all([leerPerfil(), misSellos(), misAsistencias()]);
+  if (!perfil) return location.replace('index.html');
+  estado.perfil = perfil;
+  estado.sellos = sellos;
+  estado.asistencias = asistencias;
+
+  const params = new URLSearchParams(location.search);
+  const nuevo = empresaPorId(params.get('sello'));
+  const nuevoDia = diaPorId(params.get('asistencia'));
+  const repetido = params.get('estado') === 'repetido';
+  if (params.has('sello') || params.has('asistencia')) history.replaceState(null, '', location.pathname);
+  if (nuevo && !repetido) estado.ocultar = nuevo.id;
+
+  pintarProgreso();
+  pintarConstancia();
+  sincronizarImagenes().then((cambio) => cambio && pintarDatos());
+  $('#cargando').classList.add('oculto');
+  $('#escena').classList.remove('oculto');
+
+  if (pasaporteVisible()) abrirLibro(nuevo, repetido);
+  else mostrarAntesala();
+
   if (nuevoDia) {
     const anillo = $('#anillo-dias');
     anillo.classList.add('latido');
     setTimeout(() => anillo.classList.remove('latido'), 1600);
-    const con = mentor ? ` con ${mentor.nombre}` : '';
     if (repetido) {
       aviso(`Tu asistencia del ${nuevoDia.nombre} ya estaba registrada.`);
     } else if (asistenciaCompleta() && selloCompleto()) {
       fiesta();
       aviso('¡Completaste el CUEE 2.0! 🎉 Ya puedes descargar tu constancia.', 'exito');
     } else {
-      aviso(`¡Asistencia del ${nuevoDia.nombre} registrada${con}!`, 'exito');
+      aviso(`¡Asistencia del ${nuevoDia.nombre} registrada!`, 'exito');
     }
-  } else if (params.has('fuera')) {
-    const [primero, ultimo] = [DIAS[0], DIAS[DIAS.length - 1]];
-    aviso(`Pasaporte listo${mentor ? ` con tu mentor ${mentor.nombre}` : ''}. La asistencia se marca del ${fechaLarga(primero.fecha)} al ${fechaLarga(ultimo.fecha)} escaneando su QR.`);
   }
 
   // Estudiantes registrados antes de que se pidieran cédula y facultad,
@@ -542,6 +557,8 @@ $('#clave-guardar').addEventListener('click', async () => {
     error.textContent = err instanceof ErrorCuenta ? err.message : 'No se pudo crear la contraseña.';
   }
 });
+
+$('#antesala-datos').addEventListener('click', abrirDatos);
 
 $('#salir').addEventListener('click', async () => {
   const msg = (await esAnonimo())
