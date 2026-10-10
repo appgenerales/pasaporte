@@ -16,7 +16,9 @@ export function fb() {
         import(SDK + 'firebase-firestore.js'),
       ]);
       const instancia = app.initializeApp(firebaseConfig);
-      return { auth: auth.getAuth(instancia), db: fs.getFirestore(instancia), A: auth, F: fs };
+      const a = auth.getAuth(instancia);
+      a.languageCode = 'es'; // correos de Firebase (recuperar contraseña) en español
+      return { auth: a, db: fs.getFirestore(instancia), A: auth, F: fs };
     })();
   }
   return cargando;

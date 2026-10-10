@@ -1,0 +1,67 @@
+# Borra los datos de los estudiantes (para repetir pruebas desde cero).
+# Se lanza a mano: Actions > "Limpiar datos de prueba" > Run workflow.
+# Conserva los tokens de stands y mentores, las fechas y las cuentas de los
+# organizadores. Requiere el secreto FIREBASE_SERVICE_ACCOUNT.
+name: Limpiar datos de prueba
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmacion:
+        description: 'Escribe BORRAR para confirmar'
+        required: true
+        type: string
+      borrar_cuentas:
+        description: 'Borrar también las cuentas (correo y contraseña) de los estudiantes'
+        type: boolean
+        default: true
+      simular:
+        description: 'Solo contar lo que se borraría, sin borrar nada'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: limpiar-datos
+  cancel-in-progress: false
+
+jobs:
+  limpiar:
+    name: Limpiar datos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirmación
+        if: inputs.confirmacion != 'BORRAR' && !inputs.simular
+        run: |
+          echo "::error::Para borrar escribe exactamente BORRAR en la confirmación (o marca 'simular')."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: tools/package-lock.json
+
+      - name: Instalar firebase-admin
+        run: npm ci --prefix tools
+
+      - name: Credenciales de Firebase
+        env:
+          CUENTA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$CUENTA" ]; then
+            echo "::error::Falta el secreto FIREBASE_SERVICE_ACCOUNT (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          printf '%s' "$CUENTA" > "$RUNNER_TEMP/cuenta.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/cuenta.json" >> "$GITHUB_ENV"
+
+      - name: Borrar datos
+        env:
+          CUENTAS: ${{ inputs.borrar_cuentas && '--cuentas' || '' }}
+          SIMULAR: ${{ inputs.simular && '--simular' || '' }}
+        run: node tools/limpiar-datos.mjs $CUENTAS $SIMULAR | tee -a "$GITHUB_STEP_SUMMARY"

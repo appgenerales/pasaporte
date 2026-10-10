@@ -1,12 +1,14 @@
-import { usuarioActual, leerPerfil, actualizarPerfil, guardarNota, foto, firma } from './auth.js';
-import { misSellos } from './sellos.js';
-import { EMPRESAS, TOTAL, PAGINAS, PAGINA_DATOS, PAGINA_MISION, empresaPorId, rutaSello } from './empresas.js';
+import { usuarioActual, leerPerfil, actualizarPerfil, guardarNota, foto, firma, sincronizarImagenes, faltanDatos, cerrarSesion, esAnonimo, crearContrasena, ErrorCuenta } from './auth.js';
+import { misSellos, misAsistencias } from './sellos.js';
+import { EMPRESAS, TOTAL, PAGINAS, PAGINA_DATOS, PAGINA_MISION, DIAS, empresaPorId, diaPorId, mentorPorId, rutaSello, fechaLarga, etiquetaDestino } from './empresas.js';
+import { conectarFacultadPrograma, llenarEmpresas } from './formularios.js';
+import { fiesta } from './fiesta.js';
 
 const $ = (sel) => document.querySelector(sel);
 const RATIO = 1100 / 1700; // proporción de cada hoja del boceto
 
 // `ocultar`: sello recién escaneado que se deja en blanco hasta animar su caída.
-const estado = { uid: null, perfil: null, sellos: {}, libro: null, ocultar: null };
+const estado = { uid: null, perfil: null, sellos: {}, asistencias: {}, libro: null, ocultar: null };
 
 // ---------- utilidades ----------
 function escapar(texto) {
@@ -74,8 +76,15 @@ function pintarSello(capa, empresa, animar = false) {
       <span class="sello-fecha">${fechaSello(ts)}</span>`;
   } else {
     el = document.createElement('div');
-    el.className = 'sello-pendiente';
+    el.className = 'sello-pendiente' + (empresa.sello ? ' sobre-imagen' : '');
     el.innerHTML = `Escanea el QR del stand de ${escapar(empresa.nombre)} para sellar esta hoja`;
+  }
+  // Hojas con imagen de fondo completa: el sello va donde indica `empresa.sello`.
+  if (empresa.sello) {
+    el.style.left = `${empresa.sello.x}%`;
+    el.style.top = `${empresa.sello.y}%`;
+    el.style.width = `${empresa.sello.ancho}cqw`;
+    if (ts) el.style.height = `${empresa.sello.ancho * 0.75 * (1100 / 1700)}cqh`;
   }
   capa.prepend(el);
 }
@@ -84,8 +93,12 @@ function hojaDestino(el, empresa) {
   const capa = document.createElement('div');
   capa.className = 'capa';
   capa.id = `capa-${empresa.id}`;
-  capa.style.setProperty('--linea', empresa.linea);
   pintarSello(capa, empresa);
+  if (empresa.linea == null) {
+    el.append(capa);
+    return; // hoja sin líneas para "Lo más importante que descubrí"
+  }
+  capa.style.setProperty('--linea', empresa.linea);
 
   const nota = document.createElement('textarea');
   nota.className = 'nota';
@@ -184,9 +197,25 @@ function pintarMision() {
 
 function pintarProgreso() {
   const n = EMPRESAS.filter((e) => estado.sellos[e.id]).length;
-  $('#progreso-texto').textContent = `${n} de ${TOTAL} destinos`;
   $('#progreso-num').textContent = `${n}/${TOTAL}`;
   $('#anillo').style.setProperty('--p', Math.round((n / TOTAL) * 100));
+  const d = DIAS.filter((x) => estado.asistencias[x.id]).length;
+  $('#num-dias').textContent = `${d}/${DIAS.length}`;
+  $('#anillo-dias').style.setProperty('--p', Math.round((d / DIAS.length) * 100));
+  $('#anillo-dias').parentElement.title = DIAS.map((x) => `${x.nombre}: ${estado.asistencias[x.id] ? 'asistió' : 'pendiente'}`).join(' · ');
+}
+
+const selloCompleto = () => EMPRESAS.every((e) => estado.sellos[e.id]);
+const asistenciaCompleta = () => DIAS.every((d) => estado.asistencias[d.id]);
+
+function pintarConstancia() {
+  const lista = selloCompleto() && asistenciaCompleta();
+  $('#btn-constancia').classList.toggle('oculto', !lista);
+  $('#btn-constancia').classList.toggle('btn-primario', lista);
+  $('#btn-constancia').classList.toggle('btn-secundario', !lista);
+  // Con todo completo, lo importante es la constancia.
+  $('#btn-escanear').classList.toggle('btn-primario', !lista);
+  $('#btn-escanear').classList.toggle('btn-secundario', lista);
 }
 
 function construir() {
@@ -223,7 +252,7 @@ function etiqueta(i) {
   if (i === PAGINA_MISION) return 'Misión CUEE 2.0';
   if (i === PAGINAS.length - 1) return 'Contraportada';
   const e = EMPRESAS.find((x) => x.pagina === i);
-  return e ? `Destino ${e.destino} · ${e.nombre}${estado.sellos[e.id] ? ' ✓' : ''}` : '';
+  return e ? `${etiquetaDestino(e)} · ${e.nombre}${estado.sellos[e.id] ? ' ✓' : ''}` : '';
 }
 
 function pintarIndicador() {
@@ -231,17 +260,15 @@ function pintarIndicador() {
   if (!libro) return;
   const i = libro.getCurrentPageIndex();
   const ultima = PAGINAS.length - 1;
-  let texto = etiqueta(i);
-  if (libro.getOrientation() === 'landscape' && i > 0 && i < ultima) {
-    const izq = i % 2 === 1 ? i : i - 1;
-    texto = `${etiqueta(izq)}   |   ${etiqueta(izq + 1)}`;
-  }
-  $('#indicador').textContent = texto;
   const horizontal = libro.getOrientation() === 'landscape';
+  // En pantalla ancha se ven dos hojas: la de la izquierda es la impar.
+  const izq = horizontal && i > 0 ? (i % 2 === 1 ? i : i - 1) : i;
+  const der = horizontal && i > 0 ? Math.min(izq + 1, ultima) : i;
+  $('#indicador').textContent = der !== izq ? `${etiqueta(izq)}   |   ${etiqueta(der)}` : etiqueta(i);
   $('#libro-marco').classList.toggle('tapa-delante', horizontal && i === 0);
-  $('#libro-marco').classList.toggle('tapa-detras', horizontal && i === ultima);
+  $('#libro-marco').classList.toggle('tapa-detras', horizontal && izq === ultima);
   $('#anterior').disabled = i <= 0;
-  $('#siguiente').disabled = i >= ultima;
+  $('#siguiente').disabled = der >= ultima;
 }
 
 // ---------- foto, firma y datos ----------
@@ -260,9 +287,15 @@ $('#input-foto').addEventListener('change', async (ev) => {
     const ancho = bmp.width * escala;
     const alto = bmp.height * escala;
     lienzo.getContext('2d').drawImage(bmp, (W - ancho) / 2, (H - alto) / 2, ancho, alto);
-    if (!foto.guardar(lienzo.toDataURL('image/jpeg', 0.82))) throw new Error('almacenamiento lleno');
+    const dataUrl = lienzo.toDataURL('image/jpeg', 0.82);
+    try {
+      await foto.guardar(dataUrl);
+      aviso('Foto actualizada', 'exito');
+    } catch (err) {
+      console.error(err);
+      aviso('Foto guardada en este celular, pero no se pudo subir. Revisa tu conexión.', 'error');
+    }
     pintarDatos();
-    aviso('Foto actualizada', 'exito');
   } catch (err) {
     console.error(err);
     aviso('No pudimos usar esa imagen. Prueba con otra.', 'error');
@@ -272,16 +305,24 @@ $('#input-foto').addEventListener('change', async (ev) => {
 function abrirDatos() {
   const dlg = $('#dlg-datos');
   const form = $('#form-datos');
-  for (const k of ['apellidos', 'nombres', 'programa', 'empresa', 'contacto']) {
+  for (const k of ['cedula', 'apellidos', 'nombres', 'contacto']) {
     form.elements[k].value = estado.perfil?.[k] || '';
   }
+  listasDatos.facultad.fijar(estado.perfil?.facultad, estado.perfil?.programa);
+  listasDatos.empresa.fijar(estado.perfil?.empresa);
+  form.elements.mentorNombre.value = mentorPorId(estado.perfil?.mentor)?.nombre || 'Se asigna al escanear el QR de tu mentor';
+  $('#datos-intro').textContent = faltanDatos(estado.perfil)
+    ? 'Para registrar tu asistencia a los 3 días necesitamos tu cédula y tu facultad.'
+    : 'Así aparecen en la hoja de datos de tu pasaporte.';
   dlg.showModal();
 }
 
 $('#dlg-datos').addEventListener('close', async () => {
   const dlg = $('#dlg-datos');
   if (dlg.returnValue !== 'guardar') return;
-  const datos = Object.fromEntries(new FormData($('#form-datos')));
+  const { mentorNombre, ...datos } = Object.fromEntries(new FormData($('#form-datos')));
+  if (estado.perfil?.mentor) datos.mentor = estado.perfil.mentor;
+  datos.cedula = String(datos.cedula || '').replace(/\D/g, '');
   estado.perfil = { ...estado.perfil, ...datos };
   pintarDatos();
   try {
@@ -347,11 +388,27 @@ $('#firma-limpiar').addEventListener('click', () => {
   firmado = false;
 });
 $('#firma-cancelar').addEventListener('click', () => $('#dlg-firma').close());
-$('#firma-guardar').addEventListener('click', () => {
-  if (firmado) firma.guardar(lienzo.toDataURL('image/png'));
-  else firma.borrar();
+$('#firma-guardar').addEventListener('click', async () => {
+  let guardado;
+  if (firmado) {
+    // Se reduce a 600×200 para que pese poco en Firestore.
+    const reducido = document.createElement('canvas');
+    reducido.width = 600;
+    reducido.height = 200;
+    reducido.getContext('2d').drawImage(lienzo, 0, 0, 600, 200);
+    guardado = firma.guardar(reducido.toDataURL('image/png'));
+  } else {
+    guardado = firma.borrar();
+  }
   $('#dlg-firma').close();
   pintarDatos();
+  try {
+    await guardado;
+    aviso('Firma guardada', 'exito');
+  } catch (err) {
+    console.error(err);
+    aviso('Firma guardada en este celular, pero no se pudo subir. Revisa tu conexión.', 'error');
+  }
 });
 
 // ---------- arranque ----------
@@ -359,19 +416,23 @@ async function iniciar() {
   estado.uid = await usuarioActual();
   if (!estado.uid) return location.replace('index.html');
 
-  const [perfil, sellos] = await Promise.all([leerPerfil(), misSellos()]);
+  const [perfil, sellos, asistencias] = await Promise.all([leerPerfil(), misSellos(), misAsistencias()]);
   if (!perfil) return location.replace('index.html');
   estado.perfil = perfil;
   estado.sellos = sellos;
+  estado.asistencias = asistencias;
 
   const params = new URLSearchParams(location.search);
   const nuevo = empresaPorId(params.get('sello'));
+  const nuevoDia = diaPorId(params.get('asistencia'));
   const repetido = params.get('estado') === 'repetido';
-  if (params.has('sello')) history.replaceState(null, '', location.pathname);
+  if (params.has('sello') || params.has('asistencia') || params.has('fuera')) history.replaceState(null, '', location.pathname);
   if (nuevo && !repetido) estado.ocultar = nuevo.id;
 
   construir();
   pintarProgreso();
+  pintarConstancia();
+  sincronizarImagenes().then((cambio) => cambio && pintarDatos());
 
   $('#cargando').classList.add('oculto');
   $('#escena').classList.remove('oculto');
@@ -414,19 +475,88 @@ async function iniciar() {
       estado.ocultar = null;
       pintarSello($(`#capa-${nuevo.id}`), nuevo, true);
       if (navigator.userActivation?.hasBeenActive) navigator.vibrate?.([30, 40, 70]);
-      aviso(`¡Destino ${nuevo.destino} sellado: ${nuevo.nombre}!`, 'exito');
+      aviso(`¡${etiquetaDestino(nuevo)} sellado: ${nuevo.nombre}!`, 'exito');
       pintarMision();
-      if (Object.keys(estado.sellos).length >= TOTAL) {
+      if (selloCompleto()) {
         setTimeout(() => {
           libro.flip(PAGINA_MISION);
-          aviso('¡Misión CUEE 2.0 completada! 🎉', 'exito');
-        }, 2600);
+          setTimeout(() => {
+            fiesta();
+            aviso(asistenciaCompleta()
+              ? '¡Completaste el CUEE 2.0! 🎉 Ya puedes descargar tu constancia.'
+              : '¡Misión CUEE 2.0 completada! 🎉 No olvides registrar tu asistencia de los 3 días.', 'exito');
+          }, 900);
+        }, 2400);
       }
     }, 450);
-  } else {
-    if (nuevo && repetido) aviso(`Ya tenías el sello de ${nuevo.nombre}.`);
+  } else if (nuevo && repetido) {
+    aviso(`Ya tenías el sello de ${nuevo.nombre}.`);
   }
+
+  const mentor = mentorPorId(params.get('mentor'));
+  if (nuevoDia) {
+    const anillo = $('#anillo-dias');
+    anillo.classList.add('latido');
+    setTimeout(() => anillo.classList.remove('latido'), 1600);
+    const con = mentor ? ` con ${mentor.nombre}` : '';
+    if (repetido) {
+      aviso(`Tu asistencia del ${nuevoDia.nombre} ya estaba registrada.`);
+    } else if (asistenciaCompleta() && selloCompleto()) {
+      fiesta();
+      aviso('¡Completaste el CUEE 2.0! 🎉 Ya puedes descargar tu constancia.', 'exito');
+    } else {
+      aviso(`¡Asistencia del ${nuevoDia.nombre} registrada${con}!`, 'exito');
+    }
+  } else if (params.has('fuera')) {
+    const [primero, ultimo] = [DIAS[0], DIAS[DIAS.length - 1]];
+    aviso(`Pasaporte listo${mentor ? ` con tu mentor ${mentor.nombre}` : ''}. La asistencia se marca del ${fechaLarga(primero.fecha)} al ${fechaLarga(ultimo.fecha)} escaneando su QR.`);
+  }
+
+  // Estudiantes registrados antes de que se pidieran cédula y facultad,
+  // o con la sesión anónima de la primera versión (sin contraseña).
+  const espera = nuevo || nuevoDia ? 3200 : 600;
+  if (faltanDatos(estado.perfil)) setTimeout(abrirDatos, espera);
+  else if (await esAnonimo()) setTimeout(abrirClave, espera);
 }
+
+function abrirClave() {
+  const form = $('#form-clave');
+  form.elements.correo.value = estado.perfil?.contacto || '';
+  form.querySelector('.mensaje-error').textContent = '';
+  $('#dlg-clave').showModal();
+}
+
+$('#clave-guardar').addEventListener('click', async () => {
+  const form = $('#form-clave');
+  const { correo, contrasena, contrasena2 } = Object.fromEntries(new FormData(form));
+  const error = form.querySelector('.mensaje-error');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo.trim())) return (error.textContent = 'Revisa el correo electrónico.');
+  if (contrasena.length < 6) return (error.textContent = 'La contraseña debe tener al menos 6 caracteres.');
+  if (contrasena !== contrasena2) return (error.textContent = 'Las contraseñas no coinciden.');
+  try {
+    await crearContrasena(correo, contrasena);
+    estado.perfil.contacto = correo.trim().toLowerCase();
+    $('#dlg-clave').close();
+    aviso('Listo: ya puedes entrar desde cualquier celular con tu correo y contraseña.', 'exito');
+  } catch (err) {
+    error.textContent = err instanceof ErrorCuenta ? err.message : 'No se pudo crear la contraseña.';
+  }
+});
+
+$('#salir').addEventListener('click', async () => {
+  const msg = (await esAnonimo())
+    ? 'Aún no tienes contraseña: si sales, no podrás volver a entrar a este pasaporte. ¿Salir de todos modos?'
+    : '¿Cerrar sesión? Podrás volver a entrar con tu correo y contraseña.';
+  if (!confirm(msg)) return;
+  await cerrarSesion();
+  location.replace('index.html?entrar');
+});
+
+const formDatos = $('#form-datos');
+const listasDatos = {
+  facultad: conectarFacultadPrograma(formDatos.elements.facultad, formDatos.elements.programa),
+  empresa: llenarEmpresas(formDatos.elements.empresa),
+};
 
 iniciar().catch((err) => {
   console.error(err);

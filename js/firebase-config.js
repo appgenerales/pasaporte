@@ -13,7 +13,13 @@ export const firebaseConfig = {
 };
 
 // Correos que pueden entrar a admin.html y tools/generar-qrs.html.
-// Debe coincidir con la lista de esAdmin() en firestore.rules.
+// hahiguit@gmail.com entra con Google; los demás con correo y contraseña
+// (cuentas creadas con tools/crear_admins.py). La protección real está en
+// esAdmin() de firestore.rules, que valida el correo de Google y los UID.
 export const ADMINS = [
   'hahiguit@gmail.com',
+  'angelagil@itm.edu.co',
+  'gladysperez@itm.edu.co',
+  'monicameneses@itm.edu.co',
+  'maritzamedina@itm.edu.co',
 ];

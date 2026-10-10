@@ -44,11 +44,15 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Mantener sincronizado con ADMINS en js/firebase-config.js
+    // Organizadores: cuentas de Google verificadas, o cuentas de correo y
+    // contraseña identificadas por su UID (las crea tools/crear_admins.py).
+    // Por UID y no por correo, para que nadie se registre con ese correo y
+    // quede como administrador. Mantener sincronizado con ADMINS en js/firebase-config.js.
     function esAdmin() {
-      return request.auth != null
-        && request.auth.token.email_verified == true
-        && request.auth.token.email in [__ADMINS__];
+      return request.auth != null && (
+        (request.auth.token.email_verified == true
+          && request.auth.token.email in [__ADMINS__])
+        || request.auth.uid in [/*ADMIN_UIDS*/]);
     }
 
     function texto(v, max) {
@@ -67,14 +71,62 @@ service cloud.firestore {
       }
       function valido() {
         let d = request.resource.data;
-        return d.keys().hasOnly(['nombres', 'apellidos', 'nombre', 'programa', 'empresa', 'contacto', 'notas', 'creadoEn'])
+        return d.keys().hasOnly(['cedula', 'nombres', 'apellidos', 'nombre', 'programa', 'facultad', 'empresa', 'contacto', 'mentor', 'autorizaDatos', 'notas', 'creadoEn'])
           && texto(d.nombres, 80) && texto(d.apellidos, 80) && texto(d.nombre, 161)
           && texto(d.programa, 120) && texto(d.empresa, 120) && texto(d.contacto, 120)
+          // cédula y facultad son opcionales para los registrados antes de pedirlas
+          && (!('cedula' in d) || (d.cedula is string && d.cedula.matches('[0-9]{0,15}')))
+          && (!('facultad' in d) || texto(d.facultad, 120))
+          && (!('mentor' in d) || texto(d.mentor, 60))
+          && (!('autorizaDatos' in d) || d.autorizaDatos == true)
           && d.notas is map && d.notas.size() <= 8;
       }
       allow read: if propio() || esAdmin();
       allow create: if propio() && valido() && request.resource.data.creadoEn == request.time;
       allow update: if propio() && valido() && request.resource.data.creadoEn == resource.data.creadoEn;
+      allow delete: if esAdmin();
+    }
+
+    // Foto y firma del titular (data URL), aparte del perfil para que la
+    // tabla de admin no descargue imágenes.
+    match /fotos/{uid} {
+      allow read: if (request.auth != null && request.auth.uid == uid) || esAdmin();
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['foto', 'firma', 'actualizado'])
+        && (!('foto' in request.resource.data) || texto(request.resource.data.foto, 150000))
+        && (!('firma' in request.resource.data) || texto(request.resource.data.firma, 100000))
+        && request.resource.data.actualizado == request.time;
+      allow delete: if esAdmin();
+    }
+
+    // Ventana (inicio, fin) de cada día del evento.
+    match /dias/{id} {
+      allow read, write: if esAdmin();
+    }
+
+    // Token secreto del QR de cada mentor.
+    match /mentores/{id} {
+      allow read, write: if esAdmin();
+    }
+
+    // Un documento por estudiante y día: {uid}_{diaId}. Se marca con el QR
+    // de un mentor y solo durante ese día (hora del servidor).
+    match /asistencias/{aid} {
+      function diaVigente(d) {
+        let dia = get(/databases/$(database)/documents/dias/$(d.dia)).data;
+        let mentor = get(/databases/$(database)/documents/mentores/$(d.mentor)).data;
+        return d.token == mentor.token && request.time >= dia.inicio && request.time < dia.fin;
+      }
+      allow get: if esAdmin() || (request.auth != null && aid.matches(request.auth.uid + '_.+'));
+      allow list: if esAdmin() || (request.auth != null && resource.data.uid == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['uid', 'dia', 'mentor', 'token', 'ts'])
+        && request.resource.data.uid == request.auth.uid
+        && aid == request.auth.uid + '_' + request.resource.data.dia
+        && request.resource.data.ts == request.time
+        && exists(/databases/$(database)/documents/estudiantes/$(request.auth.uid))
+        && diaVigente(request.resource.data);
+      allow update: if false;
       allow delete: if esAdmin();
     }
 
@@ -117,7 +169,7 @@ else
 fi
 echo "   publicadas (organizadores: $ADMINS)"
 
-echo "== 5/6 Authentication: anónimo y dominio autorizado"
+echo "== 5/6 Authentication: correo/contraseña y dominio autorizado"
 CFG_URL="https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT/config"
 CFG=$(api GET "$CFG_URL")
 if echo "$CFG" | grep -q '"authorizedDomains"'; then
@@ -126,9 +178,9 @@ import json, sys
 d = json.load(sys.stdin); dom = sys.argv[1]
 doms = d.get("authorizedDomains", [])
 if dom not in doms: doms.append(dom)
-print(json.dumps({"signIn": {"anonymous": {"enabled": True}}, "authorizedDomains": doms}))' "$DOMINIO")
-  api PATCH "$CFG_URL?updateMask=signIn.anonymous.enabled,authorizedDomains" -d "$CUERPO" >/dev/null
-  echo "   anónimo activado, $DOMINIO autorizado"
+print(json.dumps({"signIn": {"anonymous": {"enabled": True}, "email": {"enabled": True, "passwordRequired": True}}, "authorizedDomains": doms}))' "$DOMINIO")
+  api PATCH "$CFG_URL?updateMask=signIn.anonymous.enabled,signIn.email.enabled,signIn.email.passwordRequired,authorizedDomains" -d "$CUERPO" >/dev/null
+  echo "   correo/contraseña activado, $DOMINIO autorizado"
   AUTH_OK=1
 else
   echo "   Authentication aún no está iniciado en este proyecto."

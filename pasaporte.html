@@ -27,9 +27,18 @@
         <small>PASAPORTE</small>
         <strong>CUEE <span>2.0</span></strong>
       </a>
-      <div class="progreso" aria-live="polite">
-        <span id="progreso-texto">0 de 8 destinos</span>
-        <div class="progreso-anillo" id="anillo"><span id="progreso-num">0/8</span></div>
+      <div class="progresos" aria-live="polite">
+        <div class="progreso">
+          <div class="progreso-anillo" id="anillo-dias"><span id="num-dias">0/3</span></div>
+          <small>Días</small>
+        </div>
+        <div class="progreso">
+          <div class="progreso-anillo" id="anillo"><span id="progreso-num">0/9</span></div>
+          <small>Stands</small>
+        </div>
+        <button class="btn btn-secundario btn-icono" id="salir" type="button" aria-label="Cerrar sesión" title="Cerrar sesión">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/></svg>
+        </button>
       </div>
     </header>
 
@@ -48,10 +57,11 @@
     </nav>
 
     <div class="acciones">
-      <a class="btn btn-primario" href="scanner.html">
+      <a class="btn btn-primario" id="btn-escanear" href="scanner.html">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 8h3v3H8zM13 13h3v3h-3zM13 8h3M8 16h2"/></svg>
-        Escanear sello
+        Escanear QR
       </a>
+      <a class="btn btn-secundario oculto" id="btn-constancia" href="constancia.html">Mi constancia</a>
     </div>
   </div>
 
@@ -67,15 +77,33 @@
   <dialog id="dlg-datos">
     <form method="dialog" class="dialogo-cuerpo" id="form-datos">
       <h2>Datos del titular</h2>
-      <p>Así aparecen en la hoja de datos de tu pasaporte.</p>
-      <label class="campo-form"><span>Apellidos</span><input name="apellidos" required maxlength="80"></label>
+      <p id="datos-intro">Así aparecen en la hoja de datos de tu pasaporte.</p>
+      <label class="campo-form"><span>Cédula</span><input name="cedula" inputmode="numeric" required maxlength="15" pattern="[0-9 .]{5,15}"></label>
       <label class="campo-form"><span>Nombres</span><input name="nombres" required maxlength="80"></label>
-      <label class="campo-form"><span>Programa académico</span><input name="programa" required maxlength="120"></label>
-      <label class="campo-form"><span>Empresa <em>(opcional)</em></span><input name="empresa" maxlength="120"></label>
-      <label class="campo-form"><span>Correo institucional o documento</span><input name="contacto" class="sin-mayus" required maxlength="120"></label>
+      <label class="campo-form"><span>Apellidos</span><input name="apellidos" required maxlength="80"></label>
+      <label class="campo-form"><span>Correo electrónico <em>(es tu usuario, no se cambia)</em></span><input name="contacto" type="email" readonly class="sin-mayus"></label>
+      <label class="campo-form"><span>Facultad</span><select name="facultad" required></select></label>
+      <label class="campo-form"><span>Programa académico</span><select name="programa" required></select></label>
+      <label class="campo-form"><span>Mentor acompañante</span><input name="mentorNombre" readonly></label>
+      <label class="campo-form"><span>Empresa donde haces tu práctica <em>(opcional)</em></span><select name="empresa"></select></label>
       <div class="dialogo-botones">
         <button class="btn btn-claro" value="cancelar" formnovalidate>Cancelar</button>
         <button class="btn btn-primario" value="guardar">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-clave">
+    <form method="dialog" class="dialogo-cuerpo" id="form-clave" novalidate>
+      <h2>Protege tu pasaporte</h2>
+      <p>Crea una contraseña para entrar desde cualquier celular con tu correo. No pierdes tus sellos.</p>
+      <label class="campo-form"><span>Correo electrónico</span><input name="correo" type="email" required class="sin-mayus" autocomplete="username"></label>
+      <label class="campo-form"><span>Contraseña <em>(mínimo 6 caracteres)</em></span><input name="contrasena" type="password" required minlength="6" autocomplete="new-password"></label>
+      <label class="campo-form"><span>Repite la contraseña</span><input name="contrasena2" type="password" required minlength="6" autocomplete="new-password"></label>
+      <p class="mensaje-error" role="alert"></p>
+      <div class="dialogo-botones">
+        <button class="btn btn-claro" value="luego" formnovalidate>Más tarde</button>
+        <button class="btn btn-primario" type="button" id="clave-guardar">Crear contraseña</button>
       </div>
     </form>
   </dialog>

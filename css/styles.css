@@ -143,6 +143,32 @@ a {
   font-size: 13px;
   font-weight: 600;
 }
+.progresos {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.progreso {
+  flex-direction: column;
+  gap: 3px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.progreso small {
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+.progreso-anillo.latido {
+  animation: latido 0.5s ease 3;
+}
+@keyframes latido {
+  50% {
+    transform: scale(1.18);
+    box-shadow: 0 0 0 6px rgba(200, 217, 63, 0.25);
+  }
+}
 .progreso-anillo {
   --p: 0;
   width: 42px;
@@ -290,6 +316,15 @@ a {
   color: rgba(63, 95, 143, 0.55);
   font: 600 3.3cqw/1.35 var(--fuente);
   padding: 4cqw;
+}
+
+.sello-pendiente.sobre-imagen {
+  aspect-ratio: auto;
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(16, 45, 106, 0.45);
+  color: var(--azul);
+  padding: 2.5cqw 3cqw;
+  font-size: 3cqw;
 }
 
 /* "Lo más importante que descubrí": se escribe sobre las líneas del boceto */
@@ -482,9 +517,13 @@ a {
   padding: 6px 16px max(14px, env(safe-area-inset-bottom));
   width: 100%;
 }
-.acciones .btn-primario {
+.acciones .btn {
   flex: 1;
   max-width: 420px;
+  white-space: nowrap;
+}
+.acciones .btn-secundario {
+  flex: 0 1 auto;
 }
 
 /* ---------- Avisos ---------- */
@@ -597,6 +636,7 @@ dialog::backdrop {
   background: rgba(16, 45, 106, 0.04);
 }
 .campo-form input[type='email'],
+.campo-form select,
 .campo-form .sin-mayus {
   text-transform: none;
 }
@@ -709,6 +749,95 @@ dialog::backdrop {
   }
 }
 
+.autorizacion {
+  border: 0;
+  margin: 0 0 18px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid #d5deee;
+  border-radius: 14px;
+  font-size: 13px;
+}
+.autorizacion legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 10px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--texto);
+}
+.autorizacion label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 18px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--azul);
+  cursor: pointer;
+}
+.autorizacion input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--azul);
+}
+.campo-form select {
+  padding-right: 26px;
+  text-overflow: ellipsis;
+}
+.campo-form select:disabled:not([id='mentor']) {
+  color: #a3aec4;
+}
+.pestanas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #e3eaf6;
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 18px;
+}
+.pestana {
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  min-height: 40px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+.pestana.activa {
+  background: #fff;
+  color: var(--azul);
+  box-shadow: 0 2px 8px rgba(16, 45, 106, 0.15);
+}
+.aviso-mentor {
+  background: var(--azul);
+  color: #fff;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.aviso-mentor b {
+  color: var(--lima);
+}
+.enlace {
+  border: 0;
+  background: none;
+  color: var(--azul);
+  font-weight: 600;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 8px 0 0;
+}
+.campo-form select:disabled {
+  opacity: 1;
+  color: #0d2a5e;
+}
+
 /* ---------- Escáner ---------- */
 .escaner {
   min-height: 100dvh;
@@ -806,4 +935,14 @@ dialog::backdrop {
     margin-bottom: 10px;
     color: var(--lima);
   }
+}
+
+/* Confeti de celebración */
+.fiesta {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 60;
 }

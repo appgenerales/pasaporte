@@ -1,5 +1,5 @@
-import { usuarioActual, leerPerfil, pendiente } from './auth.js';
-import { sellar, ErrorSello } from './sellos.js';
+import { usuarioActual, leerPerfil, pendiente, guardarMentor } from './auth.js';
+import { sellar, registrarAsistencia, ErrorSello } from './sellos.js';
 
 const $ = (sel) => document.querySelector(sel);
 let lector = null;
@@ -10,32 +10,51 @@ function mostrar(id) {
   }
 }
 
+// QR de empresa: ?e=<empresa>&t=<token>. QR de mentor (registro y asistencia): ?m=<mentor>&t=<token>.
 // Acepta la URL completa del QR o solo sus parámetros.
 function leerQR(texto) {
   try {
-    const url = new URL(texto, location.href);
-    const e = url.searchParams.get('e');
-    const t = url.searchParams.get('t');
-    return e && t ? { e, t } : null;
+    const p = new URL(texto, location.href).searchParams;
+    const t = p.get('t');
+    if (!t) return null;
+    if (p.get('e')) return { tipo: 'sello', id: p.get('e'), t };
+    if (p.get('m')) return { tipo: 'mentor', id: p.get('m'), t };
+    return null;
   } catch {
     return null;
   }
 }
 
-async function procesar(e, t) {
+function query(qr) {
+  return `${qr.tipo === 'sello' ? 'e' : 'm'}=${encodeURIComponent(qr.id)}&t=${encodeURIComponent(qr.t)}`;
+}
+
+async function procesar(qr) {
   mostrar('#vista-procesando');
+  $('#texto-procesando').textContent = qr.tipo === 'sello' ? 'Sellando tu pasaporte…' : 'Registrando tu asistencia…';
   const uid = await usuarioActual();
   const perfil = uid ? await leerPerfil() : null;
   if (!perfil) {
-    // Primero el registro; el sello se aplica al terminar.
-    pendiente.guardar(e, t);
+    // Primero el registro; el QR se aplica al terminar.
+    pendiente.guardar(query(qr));
     return location.replace('index.html');
   }
   try {
-    const resultado = await sellar(e, t);
-    location.replace(`pasaporte.html?sello=${encodeURIComponent(e)}&estado=${resultado}`);
+    if (qr.tipo === 'sello') {
+      const resultado = await sellar(qr.id, qr.t);
+      location.replace(`pasaporte.html?sello=${encodeURIComponent(qr.id)}&estado=${resultado}`);
+    } else {
+      if (!perfil.mentor) await guardarMentor(qr.id).catch(console.error);
+      const { estado, dia } = await registrarAsistencia(qr.id, qr.t);
+      location.replace(`pasaporte.html?asistencia=${dia.id}&mentor=${encodeURIComponent(qr.id)}&estado=${estado}`);
+    }
   } catch (err) {
     console.error(err);
+    if (qr.tipo === 'mentor' && err.codigo === 'fecha') {
+      // Fuera de los días del evento: el registro queda hecho, la asistencia no.
+      return location.replace(`pasaporte.html?fuera=1&mentor=${encodeURIComponent(qr.id)}`);
+    }
+    $('#titulo-error').textContent = qr.tipo === 'sello' ? 'No se pudo sellar' : 'No se pudo registrar la asistencia';
     $('#mensaje-error').textContent =
       err instanceof ErrorSello ? err.message : 'Ocurrió un error inesperado. Inténtalo de nuevo.';
     mostrar('#vista-error');
@@ -59,14 +78,14 @@ async function abrirCamara() {
         return { width: lado, height: lado };
       } },
       async (texto) => {
-        const datos = leerQR(texto);
-        if (!datos) {
-          estado.textContent = 'Ese código no es de un stand CUEE 2.0. Intenta con otro.';
+        const qr = leerQR(texto);
+        if (!qr) {
+          estado.textContent = 'Ese código no es del CUEE 2.0. Intenta con otro.';
           return;
         }
         await lector.stop().catch(() => {});
-        history.replaceState(null, '', `?e=${encodeURIComponent(datos.e)}&t=${encodeURIComponent(datos.t)}`);
-        procesar(datos.e, datos.t);
+        history.replaceState(null, '', `?${query(qr)}`);
+        procesar(qr);
       },
       () => {},
     );
@@ -83,9 +102,9 @@ $('#reintentar').addEventListener('click', () => {
   abrirCamara();
 });
 
-const params = new URLSearchParams(location.search);
-if (params.get('e') && params.get('t')) {
-  procesar(params.get('e'), params.get('t'));
+const inicial = leerQR(location.href);
+if (inicial) {
+  procesar(inicial);
 } else {
   window.addEventListener('load', abrirCamara);
 }

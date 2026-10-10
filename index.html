@@ -23,38 +23,88 @@
   <main id="registro" class="registro oculto">
     <img class="registro-portada" src="assets/paginas/00-portada.webp" alt="Portada del Pasaporte Pasantías CUEE 2.0">
 
-    <form id="form-registro" class="tarjeta" novalidate>
-      <h1>Emisión de pasaporte</h1>
+    <div class="tarjeta">
+      <h1>Pasaporte CUEE 2.0</h1>
       <p class="sub">Vivamos la empresa, vivamos la universidad</p>
 
-      <label class="campo-form">
-        <span>Apellidos</span>
-        <input name="apellidos" autocomplete="family-name" required maxlength="80">
-      </label>
-      <label class="campo-form">
-        <span>Nombres</span>
-        <input name="nombres" autocomplete="given-name" required maxlength="80">
-      </label>
-      <label class="campo-form">
-        <span>Programa académico</span>
-        <input name="programa" required maxlength="120" placeholder="Ej. Ingeniería de Sistemas">
-      </label>
-      <label class="campo-form">
-        <span>Empresa <em>(opcional, si ya estás vinculado)</em></span>
-        <input name="empresa" maxlength="120">
-      </label>
-      <label class="campo-form">
-        <span>Correo institucional o documento</span>
-        <input name="contacto" class="sin-mayus" required maxlength="120" autocomplete="email" inputmode="email">
-      </label>
+      <div id="aviso-mentor" class="aviso-mentor oculto"></div>
 
-      <button class="btn btn-primario" type="submit">Emitir mi pasaporte</button>
-      <p id="error-registro" class="mensaje-error" role="alert"></p>
-      <p class="nota-privacidad">
-        Solo usamos estos datos para el seguimiento de las Pasantías CUEE 2.0.
-        Tu foto y tu firma se guardan únicamente en este celular.
-      </p>
-    </form>
+      <div class="pestanas" role="tablist">
+        <button type="button" role="tab" class="pestana activa" data-vista="form-registro" aria-selected="true">Soy nuevo</button>
+        <button type="button" role="tab" class="pestana" data-vista="form-entrar" aria-selected="false">Ya tengo pasaporte</button>
+      </div>
+
+      <form id="form-registro" novalidate>
+        <fieldset class="autorizacion">
+          <legend>¿Autoriza al ITM el tratamiento de sus datos personales para fines relacionados con las Pasantías CUEE 2.0 ITM, de acuerdo con la Ley 1581 de 2012 y la normativa vigente en Colombia?</legend>
+          <label><input type="radio" name="autoriza" value="si" required> Sí, autorizo</label>
+          <label><input type="radio" name="autoriza" value="no"> No autorizo</label>
+        </fieldset>
+        <label class="campo-form">
+          <span>Cédula</span>
+          <input name="cedula" inputmode="numeric" autocomplete="off" required maxlength="15" placeholder="Solo números">
+        </label>
+        <label class="campo-form">
+          <span>Nombres</span>
+          <input name="nombres" autocomplete="given-name" required maxlength="80">
+        </label>
+        <label class="campo-form">
+          <span>Apellidos</span>
+          <input name="apellidos" autocomplete="family-name" required maxlength="80">
+        </label>
+        <label class="campo-form">
+          <span>Correo electrónico</span>
+          <input name="contacto" type="email" required maxlength="120" autocomplete="email" placeholder="nombre@correo.itm.edu.co">
+        </label>
+        <label class="campo-form">
+          <span>Facultad</span>
+          <select name="facultad" id="facultad" required></select>
+        </label>
+        <label class="campo-form">
+          <span>Programa académico</span>
+          <select name="programa" id="programa" required></select>
+        </label>
+        <label class="campo-form">
+          <span>Empresa donde haces tu práctica <em>(opcional)</em></span>
+          <select name="empresa" id="empresa"></select>
+        </label>
+        <label class="campo-form">
+          <span>Mentor acompañante</span>
+          <select name="mentor" id="mentor" required>
+            <option value="">Elige a tu mentor</option>
+          </select>
+        </label>
+        <label class="campo-form">
+          <span>Crea una contraseña <em>(mínimo 6 caracteres)</em></span>
+          <input name="contrasena" type="password" required minlength="6" autocomplete="new-password">
+        </label>
+        <label class="campo-form">
+          <span>Repite la contraseña</span>
+          <input name="contrasena2" type="password" required minlength="6" autocomplete="new-password">
+        </label>
+
+        <button class="btn btn-primario" type="submit">Emitir mi pasaporte</button>
+        <p class="mensaje-error" role="alert"></p>
+        <p class="nota-privacidad">
+          Con tu correo y contraseña entras desde cualquier celular. Solo usamos tus datos,
+          tu foto y tu firma para el seguimiento de las Pasantías CUEE 2.0.
+        </p>
+      </form>
+
+      <form id="form-entrar" class="oculto" novalidate>
+        <label class="campo-form">
+          <span>Correo electrónico</span>
+          <input name="correo" type="email" required autocomplete="username">
+        </label>
+        <label class="campo-form">
+          <span>Contraseña</span>
+          <input name="contrasena" type="password" required autocomplete="current-password">
+        </label>
+        <button class="btn btn-primario" type="submit">Entrar</button>
+        <p class="mensaje-error" role="alert"></p>
+        <button class="enlace" type="button" id="olvide">¿Olvidaste tu contraseña?</button>
+      </form>
+    </div>
   </main>
 
   <script type="module" src="js/registro.js"></script>

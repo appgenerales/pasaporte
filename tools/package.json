@@ -1,0 +1,9 @@
+{
+  "name": "pasaporte-cuee-herramientas",
+  "private": true,
+  "type": "module",
+  "description": "Scripts de mantenimiento (limpiar datos de prueba)",
+  "dependencies": {
+    "firebase-admin": "12.7.0"
+  }
+}

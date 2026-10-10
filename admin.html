@@ -9,8 +9,9 @@
   <link rel="icon" href="assets/sellos/epm.webp">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Roboto:wght@500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <style>
     .admin { max-width: 1200px; margin: 0 auto; padding: 0 16px 40px; }
     .admin-panel { background: var(--papel); color: var(--texto); border-radius: 18px; padding: 20px; box-shadow: var(--sombra); }
@@ -28,10 +29,21 @@
     td.num { text-align: center; font-variant-numeric: tabular-nums; font-weight: 700; }
     .chip { display: inline-block; width: 22px; height: 22px; border-radius: 50%; margin-right: 3px; font-size: 10px; line-height: 22px; text-align: center; font-weight: 700; background: #edf1f8; color: #a5b1c8; }
     .chip.si { background: var(--azul); color: #fff; }
+    .chip.dia { width: auto; padding: 0 6px; border-radius: 999px; }
+    .chip:not(.si) { width: auto; min-width: 22px; padding: 0 4px; border-radius: 999px; }
+    .falta { color: var(--error); font-size: 12px; font-weight: 600; }
+    td small { color: var(--texto-suave); }
     .ok { color: var(--ok); font-weight: 800; }
     .ganador { margin-top: 16px; padding: 18px; border-radius: 14px; background: var(--azul); color: #fff; text-align: center; }
     .ganador b { display: block; font-size: 24px; color: var(--lima); margin-top: 4px; }
     .acceso { max-width: 420px; margin: 10vh auto 0; text-align: center; }
+    .ver-btn { min-height: 32px; padding: 0 12px; font-size: 12px; }
+    .ficha { display: grid; grid-template-columns: 150px 1fr; gap: 16px; align-items: start; }
+    .ficha-foto { width: 150px; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 10px; background: #e6edf8; display: grid; place-items: center; color: var(--texto-suave); font-size: 12px; text-align: center; }
+    .ficha-firma { width: 100%; aspect-ratio: 3 / 1; object-fit: contain; background: #fff; border: 1px dashed #c9d4e8; border-radius: 10px; margin-top: 8px; }
+    .ficha dl { margin: 0; font-size: 13px; }
+    .ficha dt { color: var(--texto-suave); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; margin-top: 8px; }
+    .ficha dd { margin: 0; font-weight: 600; }
     .aviso-demo { background: #fff6d6; color: #6b5300; border-radius: 12px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; }
   </style>
 </head>
@@ -47,9 +59,14 @@
   <main class="admin">
     <section id="vista-acceso" class="admin-panel acceso oculto">
       <h2 style="color:var(--azul-titulo);margin-top:0">Acceso de organizadores</h2>
-      <p style="color:var(--texto-suave)">Inicia sesión con tu cuenta de Google autorizada.</p>
-      <button class="btn btn-primario" id="entrar" type="button" style="background:var(--azul);color:#fff">Entrar con Google</button>
+      <p style="color:var(--texto-suave)">Entra con el correo y la contraseña que te asignaron.</p>
+      <form id="form-acceso" style="text-align:left" novalidate>
+        <label class="campo-form"><span>Correo</span><input name="correo" type="email" required autocomplete="username"></label>
+        <label class="campo-form"><span>Contraseña</span><input name="contrasena" type="password" required autocomplete="current-password"></label>
+        <button class="btn btn-primario" type="submit" style="width:100%;background:var(--azul);color:#fff">Entrar</button>
+      </form>
       <p id="error-acceso" class="mensaje-error"></p>
+      <button class="btn btn-claro" id="entrar" type="button" style="width:100%;margin-top:6px">Entrar con Google</button>
     </section>
 
     <section id="vista-panel" class="admin-panel oculto">
@@ -59,16 +76,18 @@
       <div class="resumen">
         <div class="dato"><b id="r-estudiantes">0</b><span>Estudiantes</span></div>
         <div class="dato"><b id="r-sellos">0</b><span>Sellos entregados</span></div>
-        <div class="dato"><b id="r-completos">0</b><span>Pasaportes completos</span></div>
+        <div class="dato"><b id="r-asistencia">0</b><span>Asistieron los 3 días</span></div>
+        <div class="dato"><b id="r-completos">0</b><span>Completos (días + sellos)</span></div>
         <div class="dato"><b id="r-promedio">0</b><span>Promedio de sellos</span></div>
       </div>
       <div class="herramientas">
-        <input id="buscar" type="search" placeholder="Buscar por nombre, programa o contacto">
+        <input id="buscar" type="search" placeholder="Buscar por cédula, nombre, programa, facultad, mentor o correo">
         <select id="filtro">
           <option value="todos">Todos</option>
-          <option value="completos">Completos</option>
+          <option value="completos">Completos (3 días + todos los sellos)</option>
           <option value="incompletos">Incompletos</option>
         </select>
+        <select id="filtro-mentor"><option value="">Todos los mentores</option></select>
         <button class="btn btn-claro" id="recargar" type="button">Actualizar</button>
         <button class="btn btn-claro" id="csv" type="button">Exportar CSV</button>
         <button class="btn btn-primario" id="sortear" type="button">Sortear ganador</button>
@@ -80,8 +99,38 @@
         </table>
       </div>
       <div id="ganador" class="ganador oculto" aria-live="polite"></div>
+
+      <h2 style="color:var(--azul-titulo);font-size:18px;margin:28px 0 4px">Constancias de estudiantes</h2>
+      <p style="color:var(--texto-suave);font-size:14px;margin:0 0 12px">Para quienes asistieron al menos 2 días. Usa el botón <b>Constancia</b> de cada fila, o descarga todas las de la lista filtrada en un solo PDF.</p>
+      <div class="herramientas">
+        <button class="btn btn-claro" id="constancias-estudiantes" type="button">Descargar constancias (2 días o más)</button>
+        <span id="estado-constancias-est" style="font-size:13px;color:var(--texto-suave)"></span>
+      </div>
+
+      <h2 style="color:var(--azul-titulo);font-size:18px;margin:28px 0 4px">Constancias de mentores</h2>
+      <p style="color:var(--texto-suave);font-size:14px;margin:0 0 12px">Constancia de abordaje y participación como Mentor de Navegación y Acompañamiento (sin cédula).</p>
+      <div class="herramientas">
+        <select id="mentor-constancia"></select>
+        <button class="btn btn-claro" id="constancia-mentor" type="button">Descargar PDF</button>
+        <button class="btn btn-claro" id="constancias-todas" type="button">Descargar las de todos (un PDF)</button>
+        <span id="estado-constancias" style="font-size:13px;color:var(--texto-suave)"></span>
+      </div>
     </section>
   </main>
+
+  <dialog id="dlg-ficha">
+    <div class="dialogo-cuerpo">
+      <h2 id="ficha-nombre"></h2>
+      <div class="ficha">
+        <div id="ficha-foto" class="ficha-foto">Cargando…</div>
+        <dl id="ficha-datos"></dl>
+      </div>
+      <div id="ficha-firma"></div>
+      <div class="dialogo-botones">
+        <button class="btn btn-claro" type="button" onclick="this.closest('dialog').close()">Cerrar</button>
+      </div>
+    </div>
+  </dialog>
 
   <script type="module" src="js/admin.js"></script>
 </body>
