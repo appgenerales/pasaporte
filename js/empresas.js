@@ -5,29 +5,30 @@
 // "Viajemos juntos" es un stand con hoja propia (sin número de destino ni
 // líneas para escribir); `sello` ubica el sello sobre su imagen, en % de la hoja.
 export const EMPRESAS = [
-  { id: 'viajemos',   nombre: 'Viajemos juntos', destino: 0, pagina: 1, linea: null, sello: { x: 74, y: 41, ancho: 42 } },
-  { id: 'epm',        nombre: 'EPM',        destino: 1, pagina: 3, linea: 77.2 },
-  { id: 'cardiovid',  nombre: 'Cardio VID', destino: 2, pagina: 4, linea: 77.2 },
-  { id: 'isa',        nombre: 'ISA',        destino: 3, pagina: 5, linea: 77.2 },
-  { id: 'texmaquila', nombre: 'Texmaquila', destino: 4, pagina: 6, linea: 76.4 },
-  { id: 'renting',    nombre: 'Renting',    destino: 5, pagina: 7, linea: 78.2 },
-  { id: 'proteccion', nombre: 'Protección', destino: 6, pagina: 8, linea: 75.9 },
-  { id: 'haceb',      nombre: 'Haceb',      destino: 7, pagina: 9, linea: 77.2 },
-  { id: 'colcafe',    nombre: 'Colcafé',    destino: 8, pagina: 10, linea: 77.2 },
+  { id: 'epm',        nombre: 'EPM',        destino: 1, pagina: 2, linea: 77.2 },
+  { id: 'cardiovid',  nombre: 'Cardio VID', destino: 2, pagina: 3, linea: 77.2 },
+  { id: 'isa',        nombre: 'ISA',        destino: 3, pagina: 4, linea: 77.2 },
+  { id: 'texmaquila', nombre: 'Texmaquila', destino: 4, pagina: 5, linea: 76.4 },
+  { id: 'renting',    nombre: 'Renting',    destino: 5, pagina: 6, linea: 78.2 },
+  { id: 'proteccion', nombre: 'Protección', destino: 6, pagina: 7, linea: 75.9 },
+  { id: 'haceb',      nombre: 'Haceb',      destino: 7, pagina: 8, linea: 77.2 },
+  { id: 'colcafe',    nombre: 'Colcafé',    destino: 8, pagina: 9, linea: 77.2 },
+  { id: 'viajemos',   nombre: 'Viajemos juntos', destino: 0, pagina: 11, linea: null, sello: { x: 74, y: 41, ancho: 42 } },
 ];
 
 export const TOTAL = EMPRESAS.length;
 
-// '01b-viajemos' es la hoja de bienvenida (imagen de WhatsApp ajustada a la hoja).
+// '01b-viajemos' es la hoja del stand Viajemos juntos (imagen de WhatsApp
+// ajustada a la hoja), la última antes de la contraportada.
 export const PAGINAS = [
-  '00-portada', '01b-viajemos', '01-datos',
+  '00-portada', '01-datos',
   '02-destino-1', '03-destino-2', '04-destino-3', '05-destino-4',
   '06-destino-5', '07-destino-6', '08-destino-7', '09-destino-8',
-  '10-mision', '11-contraportada',
+  '10-mision', '01b-viajemos', '11-contraportada',
 ];
 
-export const PAGINA_DATOS = 2;
-export const PAGINA_MISION = 11;
+export const PAGINA_DATOS = 1;
+export const PAGINA_MISION = 10;
 
 // "Destino 3" para las empresas, "Stand" para Viajemos juntos.
 export function etiquetaDestino(e) {
