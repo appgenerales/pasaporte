@@ -1,6 +1,6 @@
 // Borra los datos de los estudiantes para empezar pruebas desde cero.
 //
-// Borra: estudiantes, sellos, asistencias, fotos y (opcional) las cuentas de
+// Borra: estudiantes, sellos, asistencias, fotos, ganadores del sorteo y (opcional) las cuentas de
 // Firebase Authentication de los estudiantes.
 // Conserva: empresas y dias (tokens de los QR impresos y ventanas) y las
 // cuentas de los organizadores (ADMINS de js/firebase-config.js y los UID
@@ -15,7 +15,7 @@ import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 
-const COLECCIONES = ['estudiantes', 'sellos', 'asistencias', 'fotos'];
+const COLECCIONES = ['estudiantes', 'sellos', 'asistencias', 'fotos', 'ganadores'];
 const args = new Set(process.argv.slice(2));
 const SIMULAR = args.has('--simular');
 const CUENTAS = args.has('--cuentas');

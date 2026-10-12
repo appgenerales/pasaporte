@@ -1,6 +1,6 @@
 import { leerPerfil, registrar, iniciarSesion, recuperarContrasena, pendiente, ErrorCuenta, correoSesion } from './auth.js';
 import { MENTORES, diaPorId } from './empresas.js';
-import { conectarFacultadPrograma, llenarEmpresas } from './formularios.js';
+import { conectarFacultadPrograma, llenarEmpresas, llenarVinculos, camposPorTipo, empresaFinal } from './formularios.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -79,10 +79,19 @@ $('#form-registro').addEventListener('submit', async (ev) => {
     return;
   }
 
-  const faltan = ['cedula', 'nombres', 'apellidos', 'contacto', 'programa', 'facultad', 'mentor', 'contrasena'].filter((k) => !String(datos[k] || '').trim());
+  if (!datos.tipo) {
+    error(form, 'Elige cómo participas: estudiante, mentor, visitante de empresa o comunidad ITM.');
+    form.querySelector('.tipo-participante').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  // Los campos de otros tipos están deshabilitados y no llegan en `datos`.
+  const obligatorios = ['cedula', 'nombres', 'apellidos', 'contacto', 'contrasena'];
+  for (const c of form.elements) if (c.required && !c.disabled && c.name && c.type !== 'radio') obligatorios.push(c.name);
+  const faltan = [...new Set(obligatorios)].filter((k) => !String(datos[k] || '').trim());
   if (faltan.length) {
     error(form, 'Completa los campos obligatorios.');
-    form.elements[faltan[0]].focus();
+    [...form.elements].find((c) => c.name === faltan[0] && !c.disabled)?.focus();
     return;
   }
   if (!/^\d{5,12}$/.test(String(datos.cedula).replace(/\D/g, ''))) {
@@ -110,7 +119,7 @@ $('#form-registro').addEventListener('submit', async (ev) => {
   boton.disabled = true;
   boton.textContent = 'Emitiendo…';
   try {
-    const { contrasena, contrasena2, autoriza, ...perfil } = datos;
+    const { contrasena, contrasena2, autoriza, ...perfil } = empresaFinal(datos);
     await registrar({ ...perfil, autorizaDatos: true }, contrasena);
     continuar();
   } catch (err) {
@@ -162,6 +171,11 @@ for (const b of document.querySelectorAll('.pestana')) {
 }
 conectarFacultadPrograma($('#facultad'), $('#programa'));
 llenarEmpresas($('#empresa'));
+llenarEmpresas($('#empresa-visitante'), 'Elige la empresa');
+llenarVinculos($('#vinculo'));
+const aplicarTipo = camposPorTipo($('#form-registro'), $('#campo-empresa-otra'));
+for (const r of document.querySelectorAll('input[name=tipo]')) r.addEventListener('change', () => aplicarTipo(r.value));
+aplicarTipo(document.querySelector('input[name=tipo]:checked')?.value);
 $('#mentor').insertAdjacentHTML('beforeend', MENTORES.map((m) => `<option value="${m.id}">${m.nombre}</option>`).join(''));
 prepararAviso();
 if (new URLSearchParams(location.search).get('entrar') !== null) mostrarVista('form-entrar');

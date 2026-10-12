@@ -95,6 +95,16 @@ def corregir_destino_8(img):
     return out
 
 
+def quitar_qr_contraportada(img):
+    """La contraportada del boceto trae un QR de "Asistencia Cierre"; la
+    asistencia se toma con los QR de cada día, así que se borra (texto y QR)
+    con el azul plano del fondo. Coordenadas para la hoja a 200 dpi (1100x1700)."""
+    out = img.copy()
+    fondo = out.getpixel((60, 520))
+    ImageDraw.Draw(out).rectangle((95, 545, 410, 958), fill=fondo)
+    return out
+
+
 IMG_VIAJEMOS = RAIZ / "imagenes_referencia" / "WhatsApp Image 2026-10-09 at 11.09.46 PM.jpeg"
 
 
@@ -188,6 +198,8 @@ def main(pdf):
             hoja = img.crop(caja)
             if nombre == "09-destino-8":
                 hoja = corregir_destino_8(hoja)
+            if nombre == "11-contraportada":
+                hoja = quitar_qr_contraportada(hoja)
             hoja.save(PAG / f"{nombre}.webp", quality=82, method=6)
             print("página", nombre)
         for pagina, nombre in SELLOS.items():

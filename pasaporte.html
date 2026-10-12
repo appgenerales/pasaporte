@@ -55,7 +55,7 @@
       </div>
       <div class="antesala-texto">
         <h1>Tu pasaporte se abre el <span id="antesala-fecha"></span></h1>
-        <p>Ese día lo hojeas y lo sellas en cada stand. Mientras tanto, registra tu asistencia escaneando el QR de cada día.</p>
+        <p id="antesala-intro">Ese día lo hojeas y lo sellas en cada stand. Mientras tanto, registra tu asistencia escaneando el QR de cada día.</p>
         <ul id="antesala-dias" class="antesala-dias"></ul>
         <button class="btn btn-secundario" id="antesala-datos" type="button">Mis datos</button>
       </div>
@@ -97,10 +97,14 @@
       <label class="campo-form"><span>Nombres</span><input name="nombres" required maxlength="80"></label>
       <label class="campo-form"><span>Apellidos</span><input name="apellidos" required maxlength="80"></label>
       <label class="campo-form"><span>Correo electrónico <em>(es tu usuario, no se cambia)</em></span><input name="contacto" type="email" readonly class="sin-mayus"></label>
-      <label class="campo-form"><span>Facultad</span><select name="facultad" required></select></label>
-      <label class="campo-form"><span>Programa académico</span><select name="programa" required></select></label>
-      <label class="campo-form"><span>Mentor acompañante</span><input name="mentorNombre" readonly></label>
-      <label class="campo-form"><span>Empresa donde haces tu práctica <em>(opcional)</em></span><select name="empresa"></select></label>
+      <label class="campo-form"><span>Participas como</span><input name="tipoNombre" readonly class="sin-mayus"></label>
+      <label class="campo-form" data-tipos="estudiante"><span>Facultad</span><select name="facultad" required></select></label>
+      <label class="campo-form" data-tipos="estudiante"><span>Programa académico</span><select name="programa" required></select></label>
+      <label class="campo-form" data-tipos="estudiante"><span>Mentor acompañante</span><input name="mentorNombre" readonly></label>
+      <label class="campo-form" data-tipos="estudiante"><span>Empresa donde haces tu pasantía <em>(opcional)</em></span><select name="empresa" id="datos-empresa"></select></label>
+      <label class="campo-form" data-tipos="visitante"><span>Empresa a la que perteneces</span><select name="empresa" id="datos-empresa-visitante" required></select></label>
+      <label class="campo-form oculto" id="datos-empresa-otra"><span>¿Cuál empresa?</span><input name="empresaOtra" maxlength="120"></label>
+      <label class="campo-form" data-tipos="comunidad"><span>Vínculo con el ITM</span><select name="vinculo" required></select></label>
       <div class="dialogo-botones">
         <button class="btn btn-claro" value="cancelar" formnovalidate>Cancelar</button>
         <button class="btn btn-primario" value="guardar">Guardar</button>

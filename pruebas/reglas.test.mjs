@@ -2,7 +2,7 @@
 // Uso (desde la raíz): npx firebase-tools emulators:exec --only firestore "node pruebas/reglas.test.mjs"
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
 import { readFileSync } from 'node:fs';
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp, Timestamp, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 
 // Se agrega un UID de prueba a la lista de administradores por UID.
 const reglas = readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8')
@@ -56,6 +56,14 @@ await prueba('cédula con letras rechazada', assertFails(updateDoc(doc(ana, 'est
 await prueba('estudiante antiguo guarda nota sin cédula', assertSucceeds(updateDoc(doc(viejo, 'estudiantes/viejo'), { 'notas.epm': 'hola' })));
 await prueba('estudiante antiguo completa cédula y facultad', assertSucceeds(updateDoc(doc(viejo, 'estudiantes/viejo'), { cedula: '987654', facultad: 'Facultad de Ingenierías' })));
 await prueba('otro no lee a ana', assertFails(getDoc(doc(otro, 'estudiantes/ana'))));
+// Mentores, visitantes de empresa y comunidad ITM
+const sinPrograma = { ...perfil, programa: '', facultad: '' };
+delete sinPrograma.mentor;
+await prueba('registro de mentor', assertSucceeds(setDoc(doc(ctx('m1'), 'estudiantes/m1'), { ...sinPrograma, tipo: 'mentor' })));
+await prueba('registro de visitante de empresa', assertSucceeds(setDoc(doc(ctx('v1'), 'estudiantes/v1'), { ...sinPrograma, tipo: 'visitante', empresa: 'EPM' })));
+await prueba('registro de comunidad ITM con vínculo', assertSucceeds(setDoc(doc(ctx('c1'), 'estudiantes/c1'), { ...sinPrograma, tipo: 'comunidad', vinculo: 'Docente' })));
+await prueba('tipo desconocido rechazado', assertFails(setDoc(doc(ctx('x1'), 'estudiantes/x1'), { ...perfil, tipo: 'admin' })));
+await prueba('vínculo demasiado largo rechazado', assertFails(setDoc(doc(ctx('c2'), 'estudiantes/c2'), { ...sinPrograma, tipo: 'comunidad', vinculo: 'x'.repeat(61) })));
 // Sellos
 await prueba('sello con token correcto', assertSucceeds(setDoc(doc(ana, 'sellos/ana_epm'), { uid: 'ana', empresaId: 'epm', token: 'T-EPM', ts: serverTimestamp() })));
 await prueba('sello del stand Viajemos juntos', assertSucceeds(setDoc(doc(ana, 'sellos/ana_viajemos'), { uid: 'ana', empresaId: 'viajemos', token: 'T-VJ', ts: serverTimestamp() })));
@@ -86,6 +94,9 @@ await prueba('admin de Google lee todo', assertSucceeds(Promise.all([
 ])));
 await prueba('admin por UID lee estudiantes', assertSucceeds(getDocs(collection(adminUid, 'estudiantes'))));
 await prueba('admin escribe tokens', assertSucceeds(setDoc(doc(adminUid, 'dias/dia3'), { token: 'T' })));
+await prueba('admin registra y borra ganadores', assertSucceeds(setDoc(doc(adminUid, 'ganadores/ana'), { nombre: 'Ana Ruiz' }).then(() => deleteDoc(doc(adminUid, 'ganadores/ana')))));
+await prueba('estudiante no se pone como ganador', assertFails(setDoc(doc(ana, 'ganadores/ana'), { nombre: 'Ana Ruiz' })));
+await prueba('estudiante no lee ganadores', assertFails(getDoc(doc(ana, 'ganadores/ana'))));
 await prueba('correo de admin sin verificar no es admin', assertFails(getDocs(collection(correoAdminSinVerificar, 'estudiantes'))));
 await prueba('mismo correo con otro UID no es admin', assertFails(getDocs(collection(impostor, 'estudiantes'))));
 

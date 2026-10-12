@@ -66,13 +66,18 @@ service cloud.firestore {
       allow read, write: if esAdmin();
     }
 
+    // Ganadores del sorteo del panel: no vuelven a participar hasta reiniciar.
+    match /ganadores/{uid} {
+      allow read, write: if esAdmin();
+    }
+
     match /estudiantes/{uid} {
       function propio() {
         return request.auth != null && request.auth.uid == uid;
       }
       function valido() {
         let d = request.resource.data;
-        return d.keys().hasOnly(['cedula', 'nombres', 'apellidos', 'nombre', 'programa', 'facultad', 'empresa', 'contacto', 'mentor', 'autorizaDatos', 'notas', 'creadoEn'])
+        return d.keys().hasOnly(['cedula', 'nombres', 'apellidos', 'nombre', 'programa', 'facultad', 'empresa', 'contacto', 'mentor', 'autorizaDatos', 'tipo', 'vinculo', 'notas', 'creadoEn'])
           && texto(d.nombres, 80) && texto(d.apellidos, 80) && texto(d.nombre, 161)
           && texto(d.programa, 120) && texto(d.empresa, 120) && texto(d.contacto, 120)
           // cédula y facultad son opcionales para los registrados antes de pedirlas
@@ -80,6 +85,9 @@ service cloud.firestore {
           && (!('facultad' in d) || texto(d.facultad, 120))
           && (!('mentor' in d) || texto(d.mentor, 60))
           && (!('autorizaDatos' in d) || d.autorizaDatos == true)
+          // sin tipo = estudiante (registros anteriores)
+          && (!('tipo' in d) || d.tipo in ['estudiante', 'mentor', 'visitante', 'comunidad'])
+          && (!('vinculo' in d) || texto(d.vinculo, 60))
           && d.notas is map && d.notas.size() <= 8;
       }
       allow read: if propio() || esAdmin();

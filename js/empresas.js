@@ -5,29 +5,64 @@
 // "Viajemos juntos" es un stand con hoja propia (sin número de destino ni
 // líneas para escribir); `sello` ubica el sello sobre su imagen, en % de la hoja.
 export const EMPRESAS = [
-  { id: 'viajemos',   nombre: 'Viajemos juntos', destino: 0, pagina: 1, linea: null, sello: { x: 74, y: 41, ancho: 42 } },
-  { id: 'epm',        nombre: 'EPM',        destino: 1, pagina: 3, linea: 77.2 },
-  { id: 'cardiovid',  nombre: 'Cardio VID', destino: 2, pagina: 4, linea: 77.2 },
-  { id: 'isa',        nombre: 'ISA',        destino: 3, pagina: 5, linea: 77.2 },
-  { id: 'texmaquila', nombre: 'Texmaquila', destino: 4, pagina: 6, linea: 76.4 },
-  { id: 'renting',    nombre: 'Renting',    destino: 5, pagina: 7, linea: 78.2 },
-  { id: 'proteccion', nombre: 'Protección', destino: 6, pagina: 8, linea: 75.9 },
-  { id: 'haceb',      nombre: 'Haceb',      destino: 7, pagina: 9, linea: 77.2 },
-  { id: 'colcafe',    nombre: 'Colcafé',    destino: 8, pagina: 10, linea: 77.2 },
+  { id: 'epm',        nombre: 'EPM',        destino: 1, pagina: 2, linea: 77.2 },
+  { id: 'cardiovid',  nombre: 'Cardio VID', destino: 2, pagina: 3, linea: 77.2 },
+  { id: 'isa',        nombre: 'ISA',        destino: 3, pagina: 4, linea: 77.2 },
+  { id: 'texmaquila', nombre: 'Texmaquila', destino: 4, pagina: 5, linea: 76.4 },
+  { id: 'renting',    nombre: 'Renting',    destino: 5, pagina: 6, linea: 78.2 },
+  { id: 'proteccion', nombre: 'Protección', destino: 6, pagina: 7, linea: 75.9 },
+  { id: 'haceb',      nombre: 'Haceb',      destino: 7, pagina: 8, linea: 77.2 },
+  { id: 'colcafe',    nombre: 'Colcafé',    destino: 8, pagina: 9, linea: 77.2 },
+  { id: 'viajemos',   nombre: 'Viajemos juntos', destino: 0, pagina: 10, linea: null, sello: { x: 74, y: 41, ancho: 42 } },
 ];
 
 export const TOTAL = EMPRESAS.length;
 
-// '01b-viajemos' es la hoja de bienvenida (imagen de WhatsApp ajustada a la hoja).
+// '01b-viajemos' es la hoja del stand Viajemos juntos (imagen de WhatsApp
+// ajustada a la hoja), después de los destinos y antes del recuento de sellos.
 export const PAGINAS = [
-  '00-portada', '01b-viajemos', '01-datos',
+  '00-portada', '01-datos',
   '02-destino-1', '03-destino-2', '04-destino-3', '05-destino-4',
   '06-destino-5', '07-destino-6', '08-destino-7', '09-destino-8',
-  '10-mision', '11-contraportada',
+  '01b-viajemos', '10-mision', '11-contraportada',
 ];
 
-export const PAGINA_DATOS = 2;
+export const PAGINA_DATOS = 1;
 export const PAGINA_MISION = 11;
+
+// Quién hace la dinámica del pasaporte. Estudiantes y mentores registran la
+// asistencia de los 3 días y reciben constancia (el estudiante, además, con
+// todos los sellos; el mentor, al registrar el tercer día); los visitantes de
+// las empresas y la comunidad ITM llenan el pasaporte y la asistencia es opcional.
+// Los perfiles sin `tipo` (registrados antes) son estudiantes.
+export const TIPOS = [
+  { id: 'estudiante', nombre: 'Estudiante en pasantía', rotulo: 'Estudiante', asistencia: true, constancia: 'estudiante', constanciaConSellos: true },
+  { id: 'mentor', nombre: 'Mentor', rotulo: 'Mentor CUEE 2.0', asistencia: true, constancia: 'mentor', constanciaConSellos: false },
+  { id: 'visitante', nombre: 'Visitante de empresa', rotulo: 'Visitante empresarial', asistencia: false, constancia: null },
+  { id: 'comunidad', nombre: 'Comunidad ITM', rotulo: 'Comunidad ITM', asistencia: false, constancia: null },
+];
+
+export function tipoDe(perfil) {
+  return TIPOS.find((t) => t.id === perfil?.tipo) || TIPOS[0];
+}
+
+// ¿Ya puede descargar su constancia desde el pasaporte?
+export function constanciaLista(perfil, sellos, asistencias) {
+  const t = tipoDe(perfil);
+  if (!t.constancia || !DIAS.every((d) => asistencias[d.id])) return false;
+  return !t.constanciaConSellos || EMPRESAS.every((e) => sellos[e.id]);
+}
+
+// Vínculo con el ITM de quien se registra como comunidad ITM.
+export const VINCULOS = ['Docente', 'Administrativo', 'Directivo', 'Egresado', 'Estudiante', 'Otro'];
+
+// Texto de la casilla "Programa académico" de la hoja de datos.
+export function lineaPrograma(perfil) {
+  const t = tipoDe(perfil);
+  if (t.id === 'estudiante') return perfil?.programa || '';
+  if (t.id === 'comunidad' && perfil?.vinculo) return `${t.rotulo} · ${perfil.vinculo}`;
+  return t.rotulo;
+}
 
 // "Destino 3" para las empresas, "Stand" para Viajemos juntos.
 export function etiquetaDestino(e) {
