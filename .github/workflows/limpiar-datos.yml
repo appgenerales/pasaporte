@@ -1,12 +1,18 @@
 # Borra los datos de los estudiantes (para repetir pruebas desde cero).
 # Se lanza a mano: Actions > "Limpiar datos de prueba" > Run workflow.
 # Conserva los tokens de stands y mentores, las fechas y las cuentas de los
-# organizadores. Requiere el secreto FIREBASE_SERVICE_ACCOUNT.
+# organizadores. Requiere el secreto FIREBASE_SERVICE_ACCOUNT del ambiente
+# (Sandbox para sandbox-pasaporte, Produccion para pasaporte-itm).
 name: Limpiar datos de prueba
 
 on:
   workflow_dispatch:
     inputs:
+      proyecto:
+        description: 'Proyecto de Firebase'
+        type: choice
+        options: [sandbox-pasaporte, pasaporte-itm]
+        default: sandbox-pasaporte
       confirmacion:
         description: 'Escribe BORRAR para confirmar'
         required: true
@@ -31,6 +37,7 @@ jobs:
   limpiar:
     name: Limpiar datos
     runs-on: ubuntu-24.04
+    environment: ${{ inputs.proyecto == 'pasaporte-itm' && 'Produccion' || 'Sandbox' }}
     steps:
       - name: Confirmación
         if: inputs.confirmacion != 'BORRAR' && !inputs.simular
@@ -54,7 +61,7 @@ jobs:
           CUENTA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           if [ -z "$CUENTA" ]; then
-            echo "::error::Falta el secreto FIREBASE_SERVICE_ACCOUNT (Settings > Secrets and variables > Actions)."
+            echo "::error::Falta el secreto FIREBASE_SERVICE_ACCOUNT en el ambiente (Settings > Environments)."
             exit 1
           fi
           printf '%s' "$CUENTA" > "$RUNNER_TEMP/cuenta.json"
@@ -64,4 +71,5 @@ jobs:
         env:
           CUENTAS: ${{ inputs.borrar_cuentas && '--cuentas' || '' }}
           SIMULAR: ${{ inputs.simular && '--simular' || '' }}
-        run: node tools/limpiar-datos.mjs $CUENTAS $SIMULAR | tee -a "$GITHUB_STEP_SUMMARY"
+          PROYECTO: ${{ inputs.proyecto }}
+        run: node tools/limpiar-datos.mjs "--proyecto=$PROYECTO" $CUENTAS $SIMULAR | tee -a "$GITHUB_STEP_SUMMARY"

@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "pasaporte-itm"
+    "default": "pasaporte-itm",
+    "sandbox": "sandbox-pasaporte"
   }
 }

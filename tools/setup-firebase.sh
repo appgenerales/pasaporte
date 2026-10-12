@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Configura Firebase para el Pasaporte CUEE 2.0 desde Cloud Shell.
 # Se puede correr varias veces: lo que ya existe no se toca.
+# Uso: bash setup-firebase.sh [proyecto]   (por defecto pasaporte-itm; pruebas: sandbox-pasaporte)
 set -euo pipefail
 
-PROJECT="pasaporte-itm"
+PROJECT="${1:-pasaporte-itm}"
 ADMINS="hahiguit@gmail.com"          # correos organizadores, separados por coma
 DOMINIO="appgenerales.github.io"     # dominio de GitHub Pages
 UBICACION="nam5"                     # ubicación de Firestore (NO se puede cambiar después)
@@ -52,7 +53,7 @@ service cloud.firestore {
       return request.auth != null && (
         (request.auth.token.email_verified == true
           && request.auth.token.email in [__ADMINS__])
-        || request.auth.uid in [/*ADMIN_UIDS*/'eLJBQQsFGefMduxITAabrN8LgUh2', '59D43Q8mbjNCPFCv8enjtJdK4TI3', 'x9r0RhnlqGfEQZBRMePQ89qvISv1', 'pWUCs8wu1cWlE7aAuelODLL3Ovx2']);
+        || request.auth.uid in [/*ADMIN_UIDS*/'eLJBQQsFGefMduxITAabrN8LgUh2', '59D43Q8mbjNCPFCv8enjtJdK4TI3', 'x9r0RhnlqGfEQZBRMePQ89qvISv1', 'pWUCs8wu1cWlE7aAuelODLL3Ovx2', 'hSxjDopDxQQMoRDP2fV8YDaKWSB2', 'EkQGbgCxkcOUclFMiAbenlgw7cI2', 'J5sifNHRyJVLy2pD51W1dX4RNYU2', 'fTMbWsOXr0XoSelb4SY3dVtl3Vc2']);
     }
 
     function texto(v, max) {

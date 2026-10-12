@@ -2,7 +2,9 @@
 pone sus UID en esAdmin() de firestore.rules (y en tools/setup-firebase.sh).
 
 Requiere que en Firebase esté activado Authentication > Correo electrónico/contraseña.
-Uso: python3 tools/crear_admins.py correo1 correo2 ...
+Uso: python3 tools/crear_admins.py [--sandbox] correo1 correo2 ...
+     --sandbox crea las cuentas en el proyecto de pruebas (sandbox-pasaporte).
+Los UID de ambos proyectos van en la misma lista de esAdmin().
 Imprime correo, contraseña y UID. Las contraseñas solo se muestran aquí: guárdalas.
 Después hay que publicar firestore.rules.
 """
@@ -12,9 +14,10 @@ RAIZ = pathlib.Path(__file__).resolve().parent.parent
 PALABRAS = ['Vuelo', 'Brujula', 'Destino', 'Mapa', 'Ruta', 'Avion', 'Pasaje', 'Viaje', 'Rumbo', 'Escala']
 
 
-def api_key():
+def api_key(sandbox):
     texto = (RAIZ / 'js' / 'firebase-config.js').read_text()
-    return re.search(r"apiKey: '([^']+)'", texto).group(1)
+    bloque = re.search(r"const %s = \{(.*?)\}" % ('PRUEBAS' if sandbox else 'PRODUCCION'), texto, re.S).group(1)
+    return re.search(r"apiKey: '([^']+)'", bloque).group(1)
 
 
 def crear(correo, clave, key):
@@ -40,7 +43,9 @@ def poner_uids(uids):
 
 
 def main(correos):
-    key = api_key()
+    sandbox = '--sandbox' in correos
+    correos = [c for c in correos if c != '--sandbox']
+    key = api_key(sandbox)
     uids = []
     for correo in correos:
         clave = f'{secrets.choice(PALABRAS)}{secrets.randbelow(9000) + 1000}'
