@@ -1,6 +1,6 @@
 import { usuarioActual, leerPerfil, actualizarPerfil, guardarNota, foto, firma, sincronizarImagenes, faltanDatos, cerrarSesion, esAnonimo, crearContrasena, ErrorCuenta } from './auth.js';
 import { misSellos, misAsistencias } from './sellos.js';
-import { EMPRESAS, TOTAL, PAGINAS, PAGINA_DATOS, PAGINA_MISION, DIAS, empresaPorId, diaPorId, mentorPorId, rutaSello, fechaLarga, etiquetaDestino, tipoDe, lineaPrograma } from './empresas.js';
+import { EMPRESAS, TOTAL, PAGINAS, PAGINA_DATOS, PAGINA_MISION, DIAS, empresaPorId, diaPorId, mentorPorId, rutaSello, fechaLarga, etiquetaDestino, tipoDe, lineaPrograma, constanciaLista } from './empresas.js';
 import { conectarFacultadPrograma, llenarEmpresas, llenarVinculos, camposPorTipo, empresaFinal } from './formularios.js';
 import { fiesta } from './fiesta.js';
 import { pasaporteVisible, PASAPORTE_VISIBLE_DESDE } from './evento.js';
@@ -212,7 +212,7 @@ const selloCompleto = () => EMPRESAS.every((e) => estado.sellos[e.id]);
 const asistenciaCompleta = () => DIAS.every((d) => estado.asistencias[d.id]);
 
 function pintarConstancia() {
-  const lista = Boolean(tipoDe(estado.perfil).constancia) && selloCompleto() && asistenciaCompleta();
+  const lista = constanciaLista(estado.perfil, estado.sellos, estado.asistencias);
   $('#btn-constancia').classList.toggle('oculto', !lista);
   $('#btn-constancia').classList.toggle('btn-primario', lista);
   $('#btn-constancia').classList.toggle('btn-secundario', !lista);
@@ -536,7 +536,7 @@ async function iniciar() {
     setTimeout(() => anillo.classList.remove('latido'), 1600);
     if (repetido) {
       aviso(`Tu asistencia del ${nuevoDia.nombre} ya estaba registrada.`);
-    } else if (tipoDe(estado.perfil).constancia && asistenciaCompleta() && selloCompleto()) {
+    } else if (constanciaLista(estado.perfil, estado.sellos, estado.asistencias)) {
       fiesta();
       aviso('¡Completaste el CUEE 2.0! 🎉 Ya puedes descargar tu constancia.', 'exito');
     } else {

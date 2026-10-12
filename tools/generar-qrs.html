@@ -11,6 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <style>
     .contenedor { max-width: 1100px; margin: 0 auto; padding: 0 16px 40px; }
     .intro { background: var(--papel); color: var(--texto); border-radius: 18px; padding: 18px 20px; margin-bottom: 18px; font-size: 14px; }
@@ -29,8 +31,13 @@
     .titulo-seccion { font-size: 16px; margin: 24px 0 12px; }
     .dia-marca { display: inline-block; background: var(--azul); color: #fff; font-weight: 800; border-radius: 999px; padding: 8px 18px; margin: 14px 0 8px; }
     .dia-marca b { color: var(--lima); }
+    .barra .acciones { display: flex; gap: 8px; flex-wrap: wrap; }
     @media print {
       .titulo-seccion { display: none; }
+      /* Imprimir una sola tarjeta: ocupa la hoja. */
+      body.imprimir-una .tarjeta-qr:not(.imprimir-esta) { display: none; }
+      body.imprimir-una .rejilla { display: block; }
+      body.imprimir-una .tarjeta-qr.imprimir-esta { max-width: 150mm; margin: 15mm auto 0; padding: 12mm 10mm; zoom: 1.35; }
       .tarjeta-qr { page-break-after: auto; }
       body { background: #fff; }
       .barra, .intro, .botones { display: none !important; }
@@ -42,7 +49,10 @@
 <body>
   <header class="barra contenedor">
     <a class="marca" href="../admin.html"><small>QR DE LOS STANDS</small><strong>CUEE <span>2.0</span></strong></a>
-    <button class="btn btn-primario" id="imprimir" type="button">Imprimir</button>
+    <div class="acciones">
+      <button class="btn btn-claro" id="pdf-todos" type="button">PDF de todos</button>
+      <button class="btn btn-primario" id="imprimir" type="button">Imprimir todos</button>
+    </div>
   </header>
 
   <main class="contenedor">
@@ -162,18 +172,75 @@
         <p class="instruccion">${e.instruccion || 'Escanea para registrar tu asistencia'}</p>
         <p class="url">${url}</p>
         <div class="botones">
-          <button class="btn btn-claro" data-accion="descargar" type="button">Descargar PNG</button>
+          <button class="btn btn-claro" data-accion="imprimir" type="button">Imprimir</button>
+          <button class="btn btn-claro" data-accion="pdf" type="button">PDF</button>
+          <button class="btn btn-claro" data-accion="descargar" type="button">PNG</button>
           <button class="btn btn-claro" data-accion="rotar" type="button">Rotar token</button>
         </div>`;
       new QRCode(card.querySelector('.qr'), { text: url, width: 440, height: 440, correctLevel: QRCode.CorrectLevel.M });
       card.querySelector('[data-accion="rotar"]').onclick = () => e.rotar().catch((err) => alert(err.message));
-      card.querySelector('[data-accion="descargar"]').onclick = () => {
-        const canvas = card.querySelector('.qr canvas');
+      card.dataset.archivo = e.archivo;
+      card.querySelector('[data-accion="imprimir"]').onclick = () => imprimirUna(card);
+      card.querySelector('[data-accion="pdf"]').onclick = () => descargarPDF([card], `${e.archivo}.pdf`).catch(falloPDF);
+      card.querySelector('[data-accion="descargar"]').onclick = async () => {
         const a = document.createElement('a');
-        a.href = canvas.toDataURL('image/png');
+        a.href = (await capturar(card)).toDataURL('image/png');
         a.download = `${e.archivo}.png`;
         a.click();
       };
+    }
+
+    // ---------- Imprimir y descargar con el mismo formato de la tarjeta ----------
+    function imprimirUna(card) {
+      document.body.classList.add('imprimir-una');
+      card.classList.add('imprimir-esta');
+      addEventListener('afterprint', () => {
+        document.body.classList.remove('imprimir-una');
+        card.classList.remove('imprimir-esta');
+      }, { once: true });
+      print();
+    }
+
+    // La tarjeta tal como se ve (sello, nombre, QR y explicación), sin botones.
+    async function capturar(card) {
+      if (!window.html2canvas) throw new Error('No cargó el generador de imágenes; recarga la página.');
+      const escala = 3;
+      const lienzo = await html2canvas(card, {
+        scale: escala,
+        backgroundColor: '#ffffff',
+        ignoreElements: (el) => el.classList?.contains('botones'),
+        onclone: (doc) => { doc.getElementById(card.id).style.boxShadow = 'none'; },
+      });
+      // html2canvas deja vacío el recuadro del QR: se dibuja encima desde su canvas.
+      const qr = card.querySelector('.qr img') || card.querySelector('.qr canvas');
+      const [c, q] = [card.getBoundingClientRect(), qr.getBoundingClientRect()];
+      const ctx = lienzo.getContext('2d');
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // html2canvas deja aplicada su escala
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(card.querySelector('.qr canvas'), (q.left - c.left) * escala, (q.top - c.top) * escala, q.width * escala, q.height * escala);
+      return lienzo;
+    }
+
+    // Una tarjeta por hoja carta, centrada, de 140 mm de ancho.
+    async function descargarPDF(cards, archivo) {
+      if (!window.jspdf) throw new Error('No cargó el generador de PDF; recarga la página.');
+      const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'letter' });
+      const [anchoHoja, altoHoja] = [pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight()];
+      for (const [i, card] of cards.entries()) {
+        const lienzo = await capturar(card);
+        let ancho = 140;
+        let alto = (lienzo.height / lienzo.width) * ancho;
+        if (alto > altoHoja - 30) [alto, ancho] = [altoHoja - 30, ((altoHoja - 30) * lienzo.width) / lienzo.height];
+        if (i) pdf.addPage();
+        pdf.addImage(lienzo.toDataURL('image/jpeg', 0.95), 'JPEG', (anchoHoja - ancho) / 2, (altoHoja - alto) / 2, ancho, alto);
+      }
+      pdf.setProperties({ title: 'Códigos QR · Pasantías CUEE 2.0' });
+      pdf.save(archivo);
+    }
+
+    function falloPDF(err) {
+      console.error(err);
+      alert(err.message || 'No se pudo generar el PDF.');
     }
 
     async function iniciar() {
@@ -209,6 +276,16 @@
       }
     };
     $('#imprimir').onclick = () => print();
+    $('#pdf-todos').onclick = async () => {
+      const cards = [...document.querySelectorAll('.tarjeta-qr')];
+      if (!cards.length) return alert('Primero inicia sesión para cargar los QR.');
+      const boton = $('#pdf-todos');
+      boton.disabled = true;
+      boton.textContent = 'Generando…';
+      await descargarPDF(cards, 'QR CUEE 2.0 - asistencia y stands.pdf').catch(falloPDF);
+      boton.disabled = false;
+      boton.textContent = 'PDF de todos';
+    };
     $('#modo-fecha').innerHTML = FECHA_ASISTENCIA_OBLIGATORIA
       ? `Cada QR solo sirve en su fecha (del ${fechaLarga(DIAS[0].fecha)} al ${fechaLarga(DIAS[DIAS.length - 1].fecha)}, hora de Colombia).`
       : SANDBOX

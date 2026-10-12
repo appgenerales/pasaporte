@@ -1,6 +1,6 @@
 import { usuarioActual, leerPerfil, faltanDatos } from './auth.js';
 import { misSellos, misAsistencias } from './sellos.js';
-import { EMPRESAS, DIAS, fechaLarga, etiquetaDestino, tipoDe } from './empresas.js';
+import { EMPRESAS, DIAS, fechaLarga, etiquetaDestino, tipoDe, constanciaLista } from './empresas.js';
 import { dibujarConstancia, pdfDeLienzos, nombreArchivo } from './constancia-dibujo.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -21,7 +21,8 @@ function descargar(url, archivo) {
 function mostrarPendiente(sellos, asistencias, perfil) {
   const filas = [
     ...DIAS.map((d) => [`Asistencia ${d.nombre} (${fechaLarga(d.fecha)})`, Boolean(asistencias[d.id])]),
-    ...EMPRESAS.map((e) => [`${etiquetaDestino(e)} · ${e.nombre}`, Boolean(sellos[e.id])]),
+    // Al mentor le basta la asistencia de los 3 días.
+    ...(tipoDe(perfil).constanciaConSellos ? EMPRESAS.map((e) => [`${etiquetaDestino(e)} · ${e.nombre}`, Boolean(sellos[e.id])]) : []),
   ];
   if (faltanDatos(perfil)) filas.unshift([tipoDe(perfil).id === 'estudiante' ? 'Cédula y facultad en tus datos' : 'Cédula en tus datos', false]);
   const faltan = filas.filter(([, ok]) => !ok).length;
@@ -41,8 +42,7 @@ async function iniciar() {
   if (!plantilla) return location.replace('pasaporte.html');
   $('#cargando').classList.add('oculto');
 
-  const completo = EMPRESAS.every((e) => sellos[e.id]) && DIAS.every((d) => asistencias[d.id]);
-  if (!completo || faltanDatos(perfil)) return mostrarPendiente(sellos, asistencias, perfil);
+  if (!constanciaLista(perfil, sellos, asistencias) || faltanDatos(perfil)) return mostrarPendiente(sellos, asistencias, perfil);
 
   // La de mentor no lleva cédula.
   const lienzo = await dibujarConstancia(plantilla, { nombre: `${perfil.nombres} ${perfil.apellidos}`, cedula: perfil.cedula });

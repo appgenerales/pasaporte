@@ -31,18 +31,26 @@ export const PAGINA_DATOS = 1;
 export const PAGINA_MISION = 11;
 
 // Quién hace la dinámica del pasaporte. Estudiantes y mentores registran la
-// asistencia de los 3 días y reciben constancia; los visitantes de las
-// empresas y la comunidad ITM llenan el pasaporte y la asistencia es opcional.
+// asistencia de los 3 días y reciben constancia (el estudiante, además, con
+// todos los sellos; el mentor, al registrar el tercer día); los visitantes de
+// las empresas y la comunidad ITM llenan el pasaporte y la asistencia es opcional.
 // Los perfiles sin `tipo` (registrados antes) son estudiantes.
 export const TIPOS = [
-  { id: 'estudiante', nombre: 'Estudiante en pasantía', rotulo: 'Estudiante', asistencia: true, constancia: 'estudiante' },
-  { id: 'mentor', nombre: 'Mentor', rotulo: 'Mentor CUEE 2.0', asistencia: true, constancia: 'mentor' },
+  { id: 'estudiante', nombre: 'Estudiante en pasantía', rotulo: 'Estudiante', asistencia: true, constancia: 'estudiante', constanciaConSellos: true },
+  { id: 'mentor', nombre: 'Mentor', rotulo: 'Mentor CUEE 2.0', asistencia: true, constancia: 'mentor', constanciaConSellos: false },
   { id: 'visitante', nombre: 'Visitante de empresa', rotulo: 'Visitante empresarial', asistencia: false, constancia: null },
   { id: 'comunidad', nombre: 'Comunidad ITM', rotulo: 'Comunidad ITM', asistencia: false, constancia: null },
 ];
 
 export function tipoDe(perfil) {
   return TIPOS.find((t) => t.id === perfil?.tipo) || TIPOS[0];
+}
+
+// ¿Ya puede descargar su constancia desde el pasaporte?
+export function constanciaLista(perfil, sellos, asistencias) {
+  const t = tipoDe(perfil);
+  if (!t.constancia || !DIAS.every((d) => asistencias[d.id])) return false;
+  return !t.constanciaConSellos || EMPRESAS.every((e) => sellos[e.id]);
 }
 
 // Vínculo con el ITM de quien se registra como comunidad ITM.
