@@ -1,4 +1,5 @@
 import { DEMO, fb, local } from './firebase.js';
+import { tipoDe } from './empresas.js';
 
 const K_PERFIL = 'cue.perfil';
 const K_DEMO_UID = 'cue.demo.uid';
@@ -67,8 +68,14 @@ function limpiar(datos) {
     facultad: t(datos.facultad, 120),
     empresa: t(datos.empresa, 120),
     contacto: t(datos.contacto, 120).toLowerCase(), // correo
+    tipo: tipoDe(datos).id, // estudiante, mentor, visitante o comunidad
   };
-  if (datos.mentor) perfil.mentor = t(datos.mentor, 60);
+  if (perfil.tipo !== 'estudiante') {
+    perfil.programa = '';
+    perfil.facultad = '';
+  }
+  if (datos.mentor && perfil.tipo === 'estudiante') perfil.mentor = t(datos.mentor, 60);
+  if (datos.vinculo && perfil.tipo === 'comunidad') perfil.vinculo = t(datos.vinculo, 60);
   if (datos.autorizaDatos === true) perfil.autorizaDatos = true; // Ley 1581 de 2012
   return perfil;
 }
@@ -315,6 +322,7 @@ export const pendiente = {
 };
 
 // Datos que se agregaron después del primer registro (asistencia).
+// La facultad solo se pide a los estudiantes.
 export function faltanDatos(perfil) {
-  return !perfil?.cedula || !perfil?.facultad;
+  return !perfil?.cedula || (tipoDe(perfil).id === 'estudiante' && !perfil?.facultad);
 }

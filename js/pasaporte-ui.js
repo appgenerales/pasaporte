@@ -1,7 +1,7 @@
 import { usuarioActual, leerPerfil, actualizarPerfil, guardarNota, foto, firma, sincronizarImagenes, faltanDatos, cerrarSesion, esAnonimo, crearContrasena, ErrorCuenta } from './auth.js';
 import { misSellos, misAsistencias } from './sellos.js';
-import { EMPRESAS, TOTAL, PAGINAS, PAGINA_DATOS, PAGINA_MISION, DIAS, empresaPorId, diaPorId, mentorPorId, rutaSello, fechaLarga, etiquetaDestino } from './empresas.js';
-import { conectarFacultadPrograma, llenarEmpresas } from './formularios.js';
+import { EMPRESAS, TOTAL, PAGINAS, PAGINA_DATOS, PAGINA_MISION, DIAS, empresaPorId, diaPorId, mentorPorId, rutaSello, fechaLarga, etiquetaDestino, tipoDe, lineaPrograma } from './empresas.js';
+import { conectarFacultadPrograma, llenarEmpresas, llenarVinculos, camposPorTipo, empresaFinal } from './formularios.js';
 import { fiesta } from './fiesta.js';
 import { pasaporteVisible, PASAPORTE_VISIBLE_DESDE } from './evento.js';
 
@@ -166,7 +166,7 @@ function pintarDatos() {
   const p = estado.perfil || {};
   capa.querySelector('.campo-apellidos').textContent = p.apellidos || '';
   capa.querySelector('.campo-nombres').textContent = p.nombres || '';
-  capa.querySelector('.campo-programa').textContent = p.programa || '';
+  capa.querySelector('.campo-programa').textContent = lineaPrograma(p);
   capa.querySelector('.campo-empresa').textContent = p.empresa || '';
   capa.classList.toggle('lleno', Boolean(p.apellidos && p.nombres));
 
@@ -204,13 +204,15 @@ function pintarProgreso() {
   $('#num-dias').textContent = `${d}/${DIAS.length}`;
   $('#anillo-dias').style.setProperty('--p', Math.round((d / DIAS.length) * 100));
   $('#anillo-dias').parentElement.title = DIAS.map((x) => `${x.nombre}: ${estado.asistencias[x.id] ? 'asistió' : 'pendiente'}`).join(' · ');
+  // Visitantes y comunidad ITM: la asistencia es opcional; el anillo aparece si registran alguna.
+  $('#anillo-dias').parentElement.classList.toggle('oculto', !tipoDe(estado.perfil).asistencia && d === 0);
 }
 
 const selloCompleto = () => EMPRESAS.every((e) => estado.sellos[e.id]);
 const asistenciaCompleta = () => DIAS.every((d) => estado.asistencias[d.id]);
 
 function pintarConstancia() {
-  const lista = selloCompleto() && asistenciaCompleta();
+  const lista = Boolean(tipoDe(estado.perfil).constancia) && selloCompleto() && asistenciaCompleta();
   $('#btn-constancia').classList.toggle('oculto', !lista);
   $('#btn-constancia').classList.toggle('btn-primario', lista);
   $('#btn-constancia').classList.toggle('btn-secundario', !lista);
@@ -306,14 +308,21 @@ $('#input-foto').addEventListener('change', async (ev) => {
 function abrirDatos() {
   const dlg = $('#dlg-datos');
   const form = $('#form-datos');
+  const tipo = tipoDe(estado.perfil);
   for (const k of ['cedula', 'apellidos', 'nombres', 'contacto']) {
     form.elements[k].value = estado.perfil?.[k] || '';
   }
+  form.elements.tipoNombre.value = tipo.nombre;
   listasDatos.facultad.fijar(estado.perfil?.facultad, estado.perfil?.programa);
   listasDatos.empresa.fijar(estado.perfil?.empresa);
-  form.elements.mentorNombre.value = mentorPorId(estado.perfil?.mentor)?.nombre || 'Se asigna al escanear el QR de tu mentor';
+  listasDatos.empresaVisitante.fijar(estado.perfil?.empresa);
+  form.elements.vinculo.value = estado.perfil?.vinculo || '';
+  listasDatos.aplicar(tipo.id);
+  form.elements.mentorNombre.value = mentorPorId(estado.perfil?.mentor)?.nombre || 'Sin mentor asignado';
   $('#datos-intro').textContent = faltanDatos(estado.perfil)
-    ? 'Para registrar tu asistencia a los 3 días necesitamos tu cédula y tu facultad.'
+    ? tipo.id === 'estudiante'
+      ? 'Para registrar tu asistencia a los 3 días necesitamos tu cédula y tu facultad.'
+      : 'Necesitamos tu cédula para completar tu registro.'
     : 'Así aparecen en la hoja de datos de tu pasaporte.';
   dlg.showModal();
 }
@@ -321,7 +330,8 @@ function abrirDatos() {
 $('#dlg-datos').addEventListener('close', async () => {
   const dlg = $('#dlg-datos');
   if (dlg.returnValue !== 'guardar') return;
-  const { mentorNombre, ...datos } = Object.fromEntries(new FormData($('#form-datos')));
+  const { mentorNombre, tipoNombre, ...datos } = empresaFinal(Object.fromEntries(new FormData($('#form-datos'))));
+  datos.tipo = tipoDe(estado.perfil).id; // el tipo se elige al registrarse
   if (estado.perfil?.mentor) datos.mentor = estado.perfil.mentor;
   datos.cedula = String(datos.cedula || '').replace(/\D/g, '');
   estado.perfil = { ...estado.perfil, ...datos };
@@ -421,6 +431,10 @@ function mostrarAntesala() {
   const semana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
   const diaSemana = semana[new Date(`${PASAPORTE_VISIBLE_DESDE}T12:00:00-05:00`).getUTCDay()];
   $('#antesala-fecha').textContent = `${diaSemana} ${fechaLarga(PASAPORTE_VISIBLE_DESDE)}`;
+  if (!tipoDe(estado.perfil).asistencia) {
+    $('#antesala-intro').textContent = 'Ese día lo hojeas y lo sellas en cada stand.';
+    $('#antesala-dias').classList.add('oculto');
+  }
   $('#antesala-dias').innerHTML = DIAS.map((d) => {
     const ok = estado.asistencias[d.id];
     return `<li class="${ok ? 'si' : ''}"><span>${d.nombre} · ${fechaLarga(d.fecha)}</span><b>${ok ? '✓ Asististe' : 'Pendiente'}</b></li>`;
@@ -475,9 +489,12 @@ function abrirLibro(nuevo, repetido) {
           libro.flip(PAGINA_MISION);
           setTimeout(() => {
             fiesta();
-            aviso(asistenciaCompleta()
-              ? '¡Completaste el CUEE 2.0! 🎉 Ya puedes descargar tu constancia.'
-              : '¡Misión CUEE 2.0 completada! 🎉 No olvides registrar tu asistencia de los 3 días.', 'exito');
+            const t = tipoDe(estado.perfil);
+            aviso(!t.asistencia
+              ? '¡Misión CUEE 2.0 completada! 🎉 Gracias por viajar con nosotros.'
+              : asistenciaCompleta()
+                ? '¡Completaste el CUEE 2.0! 🎉 Ya puedes descargar tu constancia.'
+                : '¡Misión CUEE 2.0 completada! 🎉 No olvides registrar tu asistencia de los 3 días.', 'exito');
           }, 900);
         }, 2400);
       }
@@ -519,7 +536,7 @@ async function iniciar() {
     setTimeout(() => anillo.classList.remove('latido'), 1600);
     if (repetido) {
       aviso(`Tu asistencia del ${nuevoDia.nombre} ya estaba registrada.`);
-    } else if (asistenciaCompleta() && selloCompleto()) {
+    } else if (tipoDe(estado.perfil).constancia && asistenciaCompleta() && selloCompleto()) {
       fiesta();
       aviso('¡Completaste el CUEE 2.0! 🎉 Ya puedes descargar tu constancia.', 'exito');
     } else {
@@ -572,8 +589,11 @@ $('#salir').addEventListener('click', async () => {
 const formDatos = $('#form-datos');
 const listasDatos = {
   facultad: conectarFacultadPrograma(formDatos.elements.facultad, formDatos.elements.programa),
-  empresa: llenarEmpresas(formDatos.elements.empresa),
+  empresa: llenarEmpresas($('#datos-empresa')),
+  empresaVisitante: llenarEmpresas($('#datos-empresa-visitante'), 'Elige la empresa'),
+  aplicar: camposPorTipo(formDatos, $('#datos-empresa-otra')),
 };
+llenarVinculos(formDatos.elements.vinculo);
 
 iniciar().catch((err) => {
   console.error(err);

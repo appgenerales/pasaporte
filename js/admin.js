@@ -1,7 +1,7 @@
 import { DEMO, fb, local } from './firebase.js';
 import { organizadorActual, entrarConGoogle, entrarConCorreo, salir } from './admin-auth.js';
 import { dibujarConstancia, pdfDeLienzos, nombreArchivo } from './constancia-dibujo.js';
-import { EMPRESAS, TOTAL, DIAS, MENTORES, mentorPorId, rotuloCorto } from './empresas.js';
+import { EMPRESAS, TOTAL, DIAS, MENTORES, TIPOS, mentorPorId, rotuloCorto, tipoDe, lineaPrograma } from './empresas.js';
 
 const $ = (sel) => document.querySelector(sel);
 let filas = [];
@@ -61,8 +61,12 @@ async function cargar() {
   filas = Object.entries(estudiantes).map(([uid, e]) => {
     const n = EMPRESAS.filter((x) => e.sellos[x.id]).length;
     const dias = DIAS.filter((x) => e.asistencias?.[x.id]).length;
+    const tipo = tipoDe(e);
     return {
       uid,
+      tipo,
+      vinculo: e.vinculo || '',
+      linea: lineaPrograma(e), // programa, o el tipo para quien no es estudiante
       cedula: e.cedula || '',
       facultad: e.facultad || '',
       asistencias: e.asistencias || {},
@@ -75,7 +79,8 @@ async function cargar() {
       contacto: e.contacto || '',
       sellos: e.sellos,
       n,
-      completo: n >= TOTAL && dias >= DIAS.length,
+      // Visitantes y comunidad ITM completan solo con los sellos.
+      completo: n >= TOTAL && (!tipo.asistencia || dias >= DIAS.length),
       creadoEn: e.creadoEn,
     };
   });
@@ -91,8 +96,10 @@ function filtradas() {
     if (f === 'incompletos' && r.completo) return false;
     const m = $('#filtro-mentor').value;
     if (m && r.mentor !== m) return false;
+    const t = $('#filtro-tipo').value;
+    if (t && r.tipo.id !== t) return false;
     if (!q) return true;
-    return [r.cedula, r.apellidos, r.nombres, r.programa, r.facultad, r.contacto, r.empresa, mentorPorId(r.mentor)?.nombre].join(' ').toLowerCase().includes(q);
+    return [r.cedula, r.apellidos, r.nombres, r.programa, r.facultad, r.contacto, r.empresa, r.vinculo, r.tipo.nombre, mentorPorId(r.mentor)?.nombre].join(' ').toLowerCase().includes(q);
   });
 }
 
@@ -105,7 +112,7 @@ function pintar() {
   $('#r-promedio').textContent = filas.length ? (totalSellos / filas.length).toFixed(1) : '0';
 
   $('#cabecera').innerHTML =
-    '<th>Estudiante</th><th>Cédula</th><th>Programa / Facultad</th><th>Mentor</th><th>Correo</th><th>Días</th><th>Sellos</th>' +
+    '<th>Participante</th><th>Cédula</th><th>Programa / Facultad</th><th>Mentor</th><th>Correo</th><th>Días</th><th>Sellos</th>' +
     `<th>Stands (${EMPRESAS.map(rotuloCorto).join(' ')})</th><th>Completo</th><th>Ficha</th>`;
 
   const lista = filtradas();
@@ -113,10 +120,12 @@ function pintar() {
     ? lista
         .map(
           (r) => `<tr>
-        <td><b>${escapar(r.apellidos)}</b> ${escapar(r.nombres)}</td>
+        <td><b>${escapar(r.apellidos)}</b> ${escapar(r.nombres)}<br><small class="tipo-${r.tipo.id}">${escapar(r.tipo.nombre)}</small></td>
         <td>${escapar(r.cedula) || '<span class="falta">falta</span>'}</td>
-        <td>${escapar(r.programa)}<br><small>${escapar(r.facultad) || '<span class="falta">sin facultad</span>'}</small></td>
-        <td>${escapar(mentorPorId(r.mentor)?.nombre) || '<span class="falta">sin mentor</span>'}</td>
+        <td>${r.tipo.id === 'estudiante'
+          ? `${escapar(r.programa)}<br><small>${escapar(r.facultad) || '<span class="falta">sin facultad</span>'}</small>`
+          : `${escapar(r.linea)}${r.empresa ? `<br><small>${escapar(r.empresa)}</small>` : ''}`}</td>
+        <td>${r.tipo.id !== 'estudiante' ? '—' : escapar(mentorPorId(r.mentor)?.nombre) || '<span class="falta">sin mentor</span>'}</td>
         <td>${escapar(r.contacto)}</td>
         <td>${DIAS.map(
           (d, i) => {
@@ -131,14 +140,14 @@ function pintar() {
         ).join('')}</td>
         <td>${r.completo ? '<span class="ok">✓ Sí</span>' : 'No'}</td>
         <td><button class="btn btn-claro ver-btn" type="button" data-uid="${escapar(r.uid)}">Ver</button>${
-          r.dias >= MIN_DIAS_CONSTANCIA
+          r.tipo.constancia && r.dias >= MIN_DIAS_CONSTANCIA
             ? ` <button class="btn btn-claro ver-btn constancia-btn" type="button" data-uid="${escapar(r.uid)}" title="Constancia manual (asistió ${r.dias} días)">Constancia</button>`
             : ''
         }</td>
       </tr>`,
         )
         .join('')
-    : '<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--texto-suave)">Sin estudiantes para mostrar.</td></tr>';
+    : '<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--texto-suave)">Sin participantes para mostrar.</td></tr>';
 }
 
 // Foto y firma se piden solo al abrir la ficha (viven en fotos/{uid}).
@@ -147,10 +156,11 @@ async function abrirFicha(uid) {
   if (!r) return;
   $('#ficha-nombre').textContent = `${r.nombres} ${r.apellidos}`;
   $('#ficha-datos').innerHTML = [
+    ['Participa como', r.tipo.nombre],
     ['Cédula', r.cedula || '—'],
-    ['Programa', r.programa],
-    ['Facultad', r.facultad || '—'],
-    ['Mentor', mentorPorId(r.mentor)?.nombre || '—'],
+    ...(r.tipo.id === 'estudiante'
+      ? [['Programa', r.programa], ['Facultad', r.facultad || '—'], ['Mentor', mentorPorId(r.mentor)?.nombre || '—']]
+      : r.tipo.id === 'comunidad' ? [['Vínculo', r.vinculo || '—']] : []),
     ['Empresa', r.empresa || '—'],
     ['Contacto', r.contacto],
     ['Días', `${r.dias} de ${DIAS.length}`],
@@ -183,10 +193,10 @@ async function abrirFicha(uid) {
 
 function exportarCSV() {
   const celda = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const cab = ['Cédula', 'Apellidos', 'Nombres', 'Correo', 'Programa', 'Facultad', 'Empresa', 'Mentor', 'Días',
+  const cab = ['Tipo', 'Cédula', 'Apellidos', 'Nombres', 'Correo', 'Programa', 'Facultad', 'Vínculo ITM', 'Empresa', 'Mentor', 'Días',
     ...DIAS.map((d) => `Asistencia ${d.nombre}`), 'Sellos', ...EMPRESAS.map((e) => e.nombre), 'Completo', 'Registro'];
   const lineas = filtradas().map((r) =>
-    [r.cedula, r.apellidos, r.nombres, r.contacto, r.programa, r.facultad, r.empresa, mentorPorId(r.mentor)?.nombre || '', r.dias,
+    [r.tipo.nombre, r.cedula, r.apellidos, r.nombres, r.contacto, r.programa, r.facultad, r.vinculo, r.empresa, mentorPorId(r.mentor)?.nombre || '', r.dias,
       ...DIAS.map((d) => fecha(r.asistencias[d.id]?.ts)),
       r.n, ...EMPRESAS.map((e) => fecha(r.sellos[e.id])), r.completo ? 'Sí' : 'No', fecha(r.creadoEn)]
       .map(celda)
@@ -297,6 +307,8 @@ $('#buscar').addEventListener('input', pintar);
 $('#filtro').addEventListener('change', pintar);
 $('#filtro-mentor').insertAdjacentHTML('beforeend', MENTORES.map((m) => `<option value="${m.id}">${escapar(m.nombre)}</option>`).join(''));
 $('#filtro-mentor').addEventListener('change', pintar);
+$('#filtro-tipo').insertAdjacentHTML('beforeend', TIPOS.map((t) => `<option value="${t.id}">${escapar(t.nombre)}</option>`).join(''));
+$('#filtro-tipo').addEventListener('change', pintar);
 $('#csv').addEventListener('click', exportarCSV);
 $('#sortear').addEventListener('click', sortear);
 $('#filas').addEventListener('click', (ev) => {
@@ -316,7 +328,8 @@ async function constanciaEstudiantes(lista) {
   try {
     const lienzos = [];
     for (const r of lista) {
-      lienzos.push(await dibujarConstancia('estudiante', { nombre: `${r.nombres} ${r.apellidos}`, cedula: r.cedula }));
+      // Mentores registrados: plantilla de mentor (sin cédula).
+      lienzos.push(await dibujarConstancia(r.tipo.constancia, { nombre: `${r.nombres} ${r.apellidos}`, cedula: r.cedula }));
     }
     const archivo = lista.length === 1
       ? nombreArchivo(`Constancia CUEE 2.0 - ${lista[0].nombres} ${lista[0].apellidos}`)
@@ -329,7 +342,7 @@ async function constanciaEstudiantes(lista) {
   }
 }
 $('#constancias-estudiantes').addEventListener('click', () => {
-  constanciaEstudiantes(filtradas().filter((r) => r.dias >= MIN_DIAS_CONSTANCIA));
+  constanciaEstudiantes(filtradas().filter((r) => r.tipo.id === 'estudiante' && r.dias >= MIN_DIAS_CONSTANCIA));
 });
 
 iniciar();

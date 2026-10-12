@@ -13,22 +13,48 @@ export const EMPRESAS = [
   { id: 'proteccion', nombre: 'Protección', destino: 6, pagina: 7, linea: 75.9 },
   { id: 'haceb',      nombre: 'Haceb',      destino: 7, pagina: 8, linea: 77.2 },
   { id: 'colcafe',    nombre: 'Colcafé',    destino: 8, pagina: 9, linea: 77.2 },
-  { id: 'viajemos',   nombre: 'Viajemos juntos', destino: 0, pagina: 11, linea: null, sello: { x: 74, y: 41, ancho: 42 } },
+  { id: 'viajemos',   nombre: 'Viajemos juntos', destino: 0, pagina: 10, linea: null, sello: { x: 74, y: 41, ancho: 42 } },
 ];
 
 export const TOTAL = EMPRESAS.length;
 
 // '01b-viajemos' es la hoja del stand Viajemos juntos (imagen de WhatsApp
-// ajustada a la hoja), la última antes de la contraportada.
+// ajustada a la hoja), después de los destinos y antes del recuento de sellos.
 export const PAGINAS = [
   '00-portada', '01-datos',
   '02-destino-1', '03-destino-2', '04-destino-3', '05-destino-4',
   '06-destino-5', '07-destino-6', '08-destino-7', '09-destino-8',
-  '10-mision', '01b-viajemos', '11-contraportada',
+  '01b-viajemos', '10-mision', '11-contraportada',
 ];
 
 export const PAGINA_DATOS = 1;
-export const PAGINA_MISION = 10;
+export const PAGINA_MISION = 11;
+
+// Quién hace la dinámica del pasaporte. Estudiantes y mentores registran la
+// asistencia de los 3 días y reciben constancia; los visitantes de las
+// empresas y la comunidad ITM llenan el pasaporte y la asistencia es opcional.
+// Los perfiles sin `tipo` (registrados antes) son estudiantes.
+export const TIPOS = [
+  { id: 'estudiante', nombre: 'Estudiante en pasantía', rotulo: 'Estudiante', asistencia: true, constancia: 'estudiante' },
+  { id: 'mentor', nombre: 'Mentor', rotulo: 'Mentor CUEE 2.0', asistencia: true, constancia: 'mentor' },
+  { id: 'visitante', nombre: 'Visitante de empresa', rotulo: 'Visitante empresarial', asistencia: false, constancia: null },
+  { id: 'comunidad', nombre: 'Comunidad ITM', rotulo: 'Comunidad ITM', asistencia: false, constancia: null },
+];
+
+export function tipoDe(perfil) {
+  return TIPOS.find((t) => t.id === perfil?.tipo) || TIPOS[0];
+}
+
+// Vínculo con el ITM de quien se registra como comunidad ITM.
+export const VINCULOS = ['Docente', 'Administrativo', 'Directivo', 'Egresado', 'Estudiante', 'Otro'];
+
+// Texto de la casilla "Programa académico" de la hoja de datos.
+export function lineaPrograma(perfil) {
+  const t = tipoDe(perfil);
+  if (t.id === 'estudiante') return perfil?.programa || '';
+  if (t.id === 'comunidad' && perfil?.vinculo) return `${t.rotulo} · ${perfil.vinculo}`;
+  return t.rotulo;
+}
 
 // "Destino 3" para las empresas, "Stand" para Viajemos juntos.
 export function etiquetaDestino(e) {

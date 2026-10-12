@@ -40,6 +40,15 @@
           <label><input type="radio" name="autoriza" value="si" required> Sí, autorizo</label>
           <label><input type="radio" name="autoriza" value="no"> No autorizo</label>
         </fieldset>
+        <fieldset class="autorizacion tipo-participante">
+          <legend>Participo como</legend>
+          <div class="opciones-tipo">
+            <label><input type="radio" name="tipo" value="estudiante" required> Estudiante en pasantía</label>
+            <label><input type="radio" name="tipo" value="mentor"> Mentor</label>
+            <label><input type="radio" name="tipo" value="visitante"> Visitante de empresa</label>
+            <label><input type="radio" name="tipo" value="comunidad"> Comunidad ITM</label>
+          </div>
+        </fieldset>
         <label class="campo-form">
           <span>Cédula</span>
           <input name="cedula" inputmode="numeric" autocomplete="off" required maxlength="15" placeholder="Solo números">
@@ -54,21 +63,33 @@
         </label>
         <label class="campo-form">
           <span>Correo electrónico</span>
-          <input name="contacto" type="email" required maxlength="120" autocomplete="email" placeholder="nombre@correo.itm.edu.co">
+          <input name="contacto" type="email" required maxlength="120" autocomplete="email" placeholder="tu correo">
         </label>
-        <label class="campo-form">
+        <label class="campo-form" data-tipos="estudiante">
           <span>Facultad</span>
           <select name="facultad" id="facultad" required></select>
         </label>
-        <label class="campo-form">
+        <label class="campo-form" data-tipos="estudiante">
           <span>Programa académico</span>
           <select name="programa" id="programa" required></select>
         </label>
-        <label class="campo-form">
+        <label class="campo-form" data-tipos="estudiante">
           <span>Empresa donde haces tu pasantía <em>(opcional)</em></span>
           <select name="empresa" id="empresa"></select>
         </label>
-        <label class="campo-form">
+        <label class="campo-form" data-tipos="visitante">
+          <span>Empresa a la que perteneces</span>
+          <select name="empresa" id="empresa-visitante" required></select>
+        </label>
+        <label class="campo-form oculto" id="campo-empresa-otra">
+          <span>¿Cuál empresa?</span>
+          <input name="empresaOtra" maxlength="120" autocomplete="organization">
+        </label>
+        <label class="campo-form" data-tipos="comunidad">
+          <span>Vínculo con el ITM</span>
+          <select name="vinculo" id="vinculo" required></select>
+        </label>
+        <label class="campo-form" data-tipos="estudiante">
           <span>Mentor acompañante</span>
           <select name="mentor" id="mentor" required>
             <option value="">Elige a tu mentor</option>

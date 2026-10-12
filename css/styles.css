@@ -903,7 +903,19 @@ dialog::backdrop {
   color: var(--azul);
   cursor: pointer;
 }
+.opciones-tipo {
+  clear: both;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+}
+.tipo-participante label {
+  margin-right: 0;
+  font-size: 13px;
+  line-height: 1.25;
+}
 .autorizacion input {
+  flex: none;
   width: 20px;
   height: 20px;
   accent-color: var(--azul);

@@ -74,19 +74,20 @@
         Modo demo: Firebase no está configurado, así que solo ves el pasaporte guardado en este navegador.
       </div>
       <div class="resumen">
-        <div class="dato"><b id="r-estudiantes">0</b><span>Estudiantes</span></div>
+        <div class="dato"><b id="r-estudiantes">0</b><span>Participantes</span></div>
         <div class="dato"><b id="r-sellos">0</b><span>Sellos entregados</span></div>
         <div class="dato"><b id="r-asistencia">0</b><span>Asistieron los 3 días</span></div>
-        <div class="dato"><b id="r-completos">0</b><span>Completos (días + sellos)</span></div>
+        <div class="dato"><b id="r-completos">0</b><span>Pasaportes completos</span></div>
         <div class="dato"><b id="r-promedio">0</b><span>Promedio de sellos</span></div>
       </div>
       <div class="herramientas">
-        <input id="buscar" type="search" placeholder="Buscar por cédula, nombre, programa, facultad, mentor o correo">
+        <input id="buscar" type="search" placeholder="Buscar por cédula, nombre, programa, empresa, mentor o correo">
         <select id="filtro">
           <option value="todos">Todos</option>
-          <option value="completos">Completos (3 días + todos los sellos)</option>
+          <option value="completos">Completos (todos los sellos + 3 días si aplica)</option>
           <option value="incompletos">Incompletos</option>
         </select>
+        <select id="filtro-tipo"><option value="">Todos los tipos</option></select>
         <select id="filtro-mentor"><option value="">Todos los mentores</option></select>
         <button class="btn btn-claro" id="recargar" type="button">Actualizar</button>
         <button class="btn btn-claro" id="csv" type="button">Exportar CSV</button>
@@ -101,7 +102,7 @@
       <div id="ganador" class="ganador oculto" aria-live="polite"></div>
 
       <h2 style="color:var(--azul-titulo);font-size:18px;margin:28px 0 4px">Constancias de estudiantes</h2>
-      <p style="color:var(--texto-suave);font-size:14px;margin:0 0 12px">Para quienes asistieron al menos 2 días. Usa el botón <b>Constancia</b> de cada fila, o descarga todas las de la lista filtrada en un solo PDF.</p>
+      <p style="color:var(--texto-suave);font-size:14px;margin:0 0 12px">Para estudiantes y mentores que asistieron al menos 2 días. Usa el botón <b>Constancia</b> de cada fila (a los mentores registrados les sale la de mentor), o descarga todas las de estudiantes de la lista filtrada en un solo PDF.</p>
       <div class="herramientas">
         <button class="btn btn-claro" id="constancias-estudiantes" type="button">Descargar constancias (2 días o más)</button>
         <span id="estado-constancias-est" style="font-size:13px;color:var(--texto-suave)"></span>

@@ -56,6 +56,14 @@ await prueba('cédula con letras rechazada', assertFails(updateDoc(doc(ana, 'est
 await prueba('estudiante antiguo guarda nota sin cédula', assertSucceeds(updateDoc(doc(viejo, 'estudiantes/viejo'), { 'notas.epm': 'hola' })));
 await prueba('estudiante antiguo completa cédula y facultad', assertSucceeds(updateDoc(doc(viejo, 'estudiantes/viejo'), { cedula: '987654', facultad: 'Facultad de Ingenierías' })));
 await prueba('otro no lee a ana', assertFails(getDoc(doc(otro, 'estudiantes/ana'))));
+// Mentores, visitantes de empresa y comunidad ITM
+const sinPrograma = { ...perfil, programa: '', facultad: '' };
+delete sinPrograma.mentor;
+await prueba('registro de mentor', assertSucceeds(setDoc(doc(ctx('m1'), 'estudiantes/m1'), { ...sinPrograma, tipo: 'mentor' })));
+await prueba('registro de visitante de empresa', assertSucceeds(setDoc(doc(ctx('v1'), 'estudiantes/v1'), { ...sinPrograma, tipo: 'visitante', empresa: 'EPM' })));
+await prueba('registro de comunidad ITM con vínculo', assertSucceeds(setDoc(doc(ctx('c1'), 'estudiantes/c1'), { ...sinPrograma, tipo: 'comunidad', vinculo: 'Docente' })));
+await prueba('tipo desconocido rechazado', assertFails(setDoc(doc(ctx('x1'), 'estudiantes/x1'), { ...perfil, tipo: 'admin' })));
+await prueba('vínculo demasiado largo rechazado', assertFails(setDoc(doc(ctx('c2'), 'estudiantes/c2'), { ...sinPrograma, tipo: 'comunidad', vinculo: 'x'.repeat(61) })));
 // Sellos
 await prueba('sello con token correcto', assertSucceeds(setDoc(doc(ana, 'sellos/ana_epm'), { uid: 'ana', empresaId: 'epm', token: 'T-EPM', ts: serverTimestamp() })));
 await prueba('sello del stand Viajemos juntos', assertSucceeds(setDoc(doc(ana, 'sellos/ana_viajemos'), { uid: 'ana', empresaId: 'viajemos', token: 'T-VJ', ts: serverTimestamp() })));
