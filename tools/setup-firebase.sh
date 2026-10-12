@@ -66,6 +66,11 @@ service cloud.firestore {
       allow read, write: if esAdmin();
     }
 
+    // Ganadores del sorteo del panel: no vuelven a participar hasta reiniciar.
+    match /ganadores/{uid} {
+      allow read, write: if esAdmin();
+    }
+
     match /estudiantes/{uid} {
       function propio() {
         return request.auth != null && request.auth.uid == uid;

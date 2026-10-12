@@ -2,7 +2,7 @@
 // Uso (desde la raíz): npx firebase-tools emulators:exec --only firestore "node pruebas/reglas.test.mjs"
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
 import { readFileSync } from 'node:fs';
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp, Timestamp, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 
 // Se agrega un UID de prueba a la lista de administradores por UID.
 const reglas = readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8')
@@ -94,6 +94,9 @@ await prueba('admin de Google lee todo', assertSucceeds(Promise.all([
 ])));
 await prueba('admin por UID lee estudiantes', assertSucceeds(getDocs(collection(adminUid, 'estudiantes'))));
 await prueba('admin escribe tokens', assertSucceeds(setDoc(doc(adminUid, 'dias/dia3'), { token: 'T' })));
+await prueba('admin registra y borra ganadores', assertSucceeds(setDoc(doc(adminUid, 'ganadores/ana'), { nombre: 'Ana Ruiz' }).then(() => deleteDoc(doc(adminUid, 'ganadores/ana')))));
+await prueba('estudiante no se pone como ganador', assertFails(setDoc(doc(ana, 'ganadores/ana'), { nombre: 'Ana Ruiz' })));
+await prueba('estudiante no lee ganadores', assertFails(getDoc(doc(ana, 'ganadores/ana'))));
 await prueba('correo de admin sin verificar no es admin', assertFails(getDocs(collection(correoAdminSinVerificar, 'estudiantes'))));
 await prueba('mismo correo con otro UID no es admin', assertFails(getDocs(collection(impostor, 'estudiantes'))));
 

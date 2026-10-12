@@ -36,6 +36,7 @@
     .ok { color: var(--ok); font-weight: 800; }
     .ganador { margin-top: 16px; padding: 18px; border-radius: 14px; background: var(--azul); color: #fff; text-align: center; }
     .ganador b { display: block; font-size: 24px; color: var(--lima); margin-top: 4px; }
+    .ganadores-lista { margin: 10px 0 0; font-size: 13px; color: var(--texto-suave); }
     .acceso { max-width: 420px; margin: 10vh auto 0; text-align: center; }
     .ver-btn { min-height: 32px; padding: 0 12px; font-size: 12px; }
     .ficha { display: grid; grid-template-columns: 150px 1fr; gap: 16px; align-items: start; }
@@ -92,6 +93,7 @@
         <button class="btn btn-claro" id="recargar" type="button">Actualizar</button>
         <button class="btn btn-claro" id="csv" type="button">Exportar CSV</button>
         <button class="btn btn-primario" id="sortear" type="button">Sortear ganador</button>
+        <button class="btn btn-claro oculto" id="reiniciar-ganadores" type="button">Reiniciar ganadores</button>
       </div>
       <div class="tabla-scroll">
         <table>
@@ -100,6 +102,7 @@
         </table>
       </div>
       <div id="ganador" class="ganador oculto" aria-live="polite"></div>
+      <p id="ganadores-lista" class="ganadores-lista oculto"></p>
 
       <h2 style="color:var(--azul-titulo);font-size:18px;margin:28px 0 4px">Constancias de estudiantes</h2>
       <p style="color:var(--texto-suave);font-size:14px;margin:0 0 12px">Para estudiantes y mentores que asistieron al menos 2 días. Usa el botón <b>Constancia</b> de cada fila (a los mentores registrados les sale la de mentor), o descarga todas las de estudiantes de la lista filtrada en un solo PDF.</p>
