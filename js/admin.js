@@ -262,15 +262,17 @@ function exportarCSV() {
   URL.revokeObjectURL(a.href);
 }
 
+// Solo participan estudiantes en pasantía con el pasaporte completo
+// (no mentores, visitantes ni comunidad ITM).
 function sortear() {
-  const completos = filas.filter((r) => r.completo);
+  const completos = filas.filter((r) => r.completo && r.tipo.id === 'estudiante');
   const candidatos = completos.filter((r) => !r.ganador);
   const caja = $('#ganador');
   caja.classList.remove('oculto');
   if (!candidatos.length) {
     caja.innerHTML = completos.length
-      ? 'Todos los pasaportes completos ya ganaron. Usa <b>Reiniciar ganadores</b> para volver a sortear entre todos.'
-      : 'Aún no hay pasaportes completos para sortear.';
+      ? 'Todos los estudiantes con pasaporte completo ya ganaron. Usa <b>Reiniciar ganadores</b> para volver a sortear entre todos.'
+      : 'Aún no hay estudiantes con el pasaporte completo para sortear.';
     return;
   }
   const boton = $('#sortear');
@@ -283,8 +285,8 @@ function sortear() {
     if (++vueltas < 18) return;
     clearInterval(giro);
     const g = candidatos[azar()];
-    // Empresa de la pasantía (o la del visitante) en lugar del correo.
-    const detalle = [g.linea, g.empresa || 'Sin empresa registrada'].filter(Boolean).map(escapar).join(' · ');
+    // Empresa de la pasantía en lugar del correo.
+    const detalle = [g.programa, g.empresa || 'Sin empresa registrada'].filter(Boolean).map(escapar).join(' · ');
     caja.innerHTML = `🎉 Ganador del sorteo<b>${escapar(g.nombres)} ${escapar(g.apellidos)}</b>${detalle}`;
     try {
       await guardarGanador(g);
@@ -378,7 +380,7 @@ $('#filtro-tipo').addEventListener('change', pintar);
 $('#csv').addEventListener('click', exportarCSV);
 $('#sortear').addEventListener('click', sortear);
 $('#reiniciar-ganadores').addEventListener('click', async () => {
-  if (!confirm('¿Reiniciar los ganadores? Todos los pasaportes completos vuelven a participar en el sorteo.')) return;
+  if (!confirm('¿Reiniciar los ganadores? Todos los estudiantes con pasaporte completo vuelven a participar en el sorteo.')) return;
   try {
     await reiniciarGanadores();
     for (const r of filas) r.ganador = false;
